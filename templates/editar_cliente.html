@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Cliente</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Editar Cliente</h1>
+        <a href="/clientes" class="btn btn-secondary mt-3 mb-3">Voltar</a>
+        <form method="POST">
+            <div class="form-group">
+                <label for="nome">Nome</label>
+                <input type="text" class="form-control" id="nome" name="nome" value="{{ cliente.nome }}" required>
+            </div>
+            <div class="form-group">
+                <label for="telefone">Telefone</label>
+                <input type="text" class="form-control" id="telefone" name="telefone" value="{{ cliente.telefone }}" required>
+            </div>
+            <div class="form-group">
+                <label for="tipo_veiculo">Tipo de Veículo</label>
+                <input type="text" class="form-control" id="tipo_veiculo" name="tipo_veiculo" value="{{ cliente.tipo_veiculo }}" required>
+            </div>
+            <div class="form-group">
+                <label for="carro">Carro</label>
+                <input type="text" class="form-control" id="carro" name="carro" value="{{ cliente.carro }}" required>
+            </div>
+            <div class="form-group">
+                <label for="placa">Placa</label>
+                <input type="text" class="form-control" id="placa" name="placa" value="{{ cliente.placa }}" required>
+            </div>
+            <div class="form-group">
+                <label for="cpf_cnpj">CPF/CNPJ</label>
+                <input type="text" class="form-control" id="cpf_cnpj" name="cpf_cnpj" value="{{ cliente.cpf_cnpj }}" required>
+            </div>
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="mensalista" name="mensalista" {% if cliente.mensalista %}checked{% endif %}>
+                <label class="form-check-label" for="mensalista">Mensalista</label>
+            </div>
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="vinte_quatro_horas" name="vinte_quatro_horas" {% if cliente.vinte_quatro_horas %}checked{% endif %}>
+                <label class="form-check-label" for="vinte_quatro_horas">24h</label>
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">Salvar</button>
+        </form>
+    </div>
+</body>
+</html>
