@@ -2,11 +2,16 @@ from flask import Flask, render_template, request, redirect, url_for, flash, sen
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
+import logging
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///clientes.db'
 app.config['SECRET_KEY'] = 'mysecret'
 db = SQLAlchemy(app)
+
+# Configuração do logger
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -55,12 +60,15 @@ def novo_cliente():
                                vinte_quatro_horas=vinte_quatro_horas)
 
         try:
+            logger.debug(f"Adicionando cliente: {novo_cliente}")
             db.session.add(novo_cliente)
             db.session.commit()
+            logger.debug("Cliente adicionado com sucesso")
             flash('Cliente cadastrado com sucesso!', 'success')
             return redirect(url_for('clientes'))
         except Exception as e:
             db.session.rollback()
+            logger.error(f"Erro ao adicionar cliente: {e}")
             flash(f'Erro ao cadastrar cliente: {str(e)}', 'danger')
 
     return render_template('novo_cliente.html')
