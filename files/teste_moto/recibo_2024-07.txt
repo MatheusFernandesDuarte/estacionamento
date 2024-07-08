@@ -1,0 +1,11 @@
+Recibo ID: 2
+Cliente: teste moto
+Telefone: 321321
+Tipo de Veículo: moto
+Modelo: sdffds
+Placa: 4324
+CPF/CNPJ: 43265
+Data de Entrada: None
+Data de Saída: None
+Mês de Referência: 2024-07
+Valor: 150.0

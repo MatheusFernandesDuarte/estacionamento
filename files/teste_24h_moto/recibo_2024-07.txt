@@ -1,0 +1,11 @@
+Recibo ID: 6
+Cliente: teste 24h moto
+Telefone: 9583409
+Tipo de Veículo: moto
+Modelo: r9r08
+Placa: udiso
+CPF/CNPJ: 098f
+Data de Entrada: None
+Data de Saída: None
+Mês de Referência: 2024-07
+Valor: 400.0

@@ -21,11 +21,16 @@
             </div>
             <div class="form-group">
                 <label for="tipo_veiculo">Tipo de Veículo</label>
-                <input type="text" class="form-control" id="tipo_veiculo" name="tipo_veiculo" value="{{ cliente.tipo_veiculo }}" required>
+                <select class="form-control" id="tipo_veiculo" name="tipo_veiculo" required>
+                    <option value="" disabled>Selecione um tipo de veículo</option>
+                    <option value="carro pequeno" {% if cliente.tipo_veiculo == 'carro pequeno' %}selected{% endif %}>Carro Pequeno</option>
+                    <option value="SUV" {% if cliente.tipo_veiculo == 'SUV' %}selected{% endif %}>SUV</option>
+                    <option value="moto" {% if cliente.tipo_veiculo == 'moto' %}selected{% endif %}>Moto</option>
+                </select>
             </div>
             <div class="form-group">
-                <label for="carro">Carro</label>
-                <input type="text" class="form-control" id="carro" name="carro" value="{{ cliente.carro }}" required>
+                <label for="modelo">Modelo</label>
+                <input type="text" class="form-control" id="modelo" name="modelo" value="{{ cliente.modelo }}" required>
             </div>
             <div class="form-group">
                 <label for="placa">Placa</label>

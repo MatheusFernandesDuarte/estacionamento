@@ -1,0 +1,11 @@
+Recibo ID: 7
+Cliente: teste suv
+Telefone: 12
+Tipo de Veículo: SUV
+Modelo: 432432432
+Placa: 432432643
+CPF/CNPJ: 43265
+Data de Entrada: None
+Data de Saída: None
+Mês de Referência: 2024-03
+Valor: 350.0

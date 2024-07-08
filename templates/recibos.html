@@ -10,6 +10,7 @@
     <div class="container">
         <h1 class="mt-5">Recibos</h1>
         <a href="/" class="btn btn-secondary mt-3 mb-3">Voltar</a>
+        <a href="/recibo/novo" class="btn btn-primary mt-3 mb-3">Novo Recibo</a>
         <table class="table table-striped">
             <thead>
                 <tr>
@@ -26,11 +27,37 @@
                 <tr>
                     <td>{{ recibo.id }}</td>
                     <td>{{ recibo.cliente.nome }}</td>
-                    <td>{{ recibo.data_entrada }}</td>
-                    <td>{{ recibo.data_saida }}</td>
+                    <td>
+                        {% if recibo.data_entrada %}
+                            {% if not recibo.data_saida %}
+                                Diária - {{ recibo.data_entrada.strftime('%d/%m/%Y') }}
+                            {% else %}
+                                {{ recibo.data_entrada.strftime('%d/%m/%Y %H:%M') }}
+                            {% endif %}
+                        {% elif recibo.mes_referencia %}
+                            Mensalista - {{ recibo.mes_referencia.split('-')[1] }}/{{ recibo.mes_referencia.split('-')[0] }}
+                        {% else %}
+                            None
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if recibo.data_saida %}
+                            {{ recibo.data_saida.strftime('%d/%m/%Y %H:%M') }}
+                        {% elif recibo.data_entrada and not recibo.data_saida %}
+                            Diária - {{ recibo.data_entrada.strftime('%d/%m/%Y') }}
+                        {% elif recibo.mes_referencia %}
+                            Mensalista - {{ recibo.mes_referencia.split('-')[1] }}/{{ recibo.mes_referencia.split('-')[0] }}
+                        {% else %}
+                            None
+                        {% endif %}
+                    </td>
                     <td>{{ recibo.valor }}</td>
                     <td>
                         <a href="/recibo/{{ recibo.id }}/exportar" class="btn btn-info btn-sm">Exportar</a>
+                        <a href="/recibo/{{ recibo.id }}/editar" class="btn btn-warning btn-sm">Editar</a>
+                        <form action="/recibo/{{ recibo.id }}/deletar" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
+                        </form>
                     </td>
                 </tr>
                 {% endfor %}

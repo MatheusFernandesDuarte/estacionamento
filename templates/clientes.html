@@ -10,8 +10,16 @@
     <div class="container">
         <h1 class="mt-5">Clientes</h1>
         <a href="/" class="btn btn-secondary mt-3 mb-3">Voltar</a>
-        <a href="/cliente/novo" class="btn btn-primary mt-3 mb-3">Adicionar Cliente</a>
-        <a href="/recibos" class="btn btn-info mt-3 mb-3">Gerenciar Recibos</a>
+        <a href="/cliente/novo" class="btn btn-primary mt-3 mb-3">Novo Cliente</a>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
         <table class="table table-striped">
             <thead>
                 <tr>
@@ -19,11 +27,11 @@
                     <th>Nome</th>
                     <th>Telefone</th>
                     <th>Tipo de Veículo</th>
-                    <th>Carro</th>
+                    <th>Modelo</th>
                     <th>Placa</th>
                     <th>CPF/CNPJ</th>
                     <th>Mensalista</th>
-                    <th>24h</th>
+                    <th>24 Horas</th>
                     <th>Ações</th>
                 </tr>
             </thead>
@@ -34,14 +42,16 @@
                     <td>{{ cliente.nome }}</td>
                     <td>{{ cliente.telefone }}</td>
                     <td>{{ cliente.tipo_veiculo }}</td>
-                    <td>{{ cliente.carro }}</td>
+                    <td>{{ cliente.modelo }}</td>
                     <td>{{ cliente.placa }}</td>
                     <td>{{ cliente.cpf_cnpj }}</td>
                     <td>{{ 'Sim' if cliente.mensalista else 'Não' }}</td>
                     <td>{{ 'Sim' if cliente.vinte_quatro_horas else 'Não' }}</td>
                     <td>
                         <a href="/cliente/{{ cliente.id }}/editar" class="btn btn-warning btn-sm">Editar</a>
-                        <a href="/cliente/{{ cliente.id }}/deletar" class="btn btn-danger btn-sm">Deletar</a>
+                        <form action="/cliente/{{ cliente.id }}/deletar" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
+                        </form>
                     </td>
                 </tr>
                 {% endfor %}
