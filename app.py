@@ -210,9 +210,9 @@ def exportar_recibo(id):
     if recibo.mes_referencia:
         file_name = f"recibo_{recibo.mes_referencia}.txt"
     elif recibo.data_entrada and recibo.data_saida:
-        file_name = f"recibo_{recibo.data_entrada.strftime('%Y-%m-%d')}_a_{recibo.data_saida.strftime('%Y-%m-%d')}.txt"
+        file_name = f"recibo_{recibo.data_entrada.strftime('%d-%m-%Y')}_a_{recibo.data_saida.strftime('%d-%m-%Y')}.txt"
     elif recibo.data_entrada:
-        file_name = f"recibo_{recibo.data_entrada.strftime('%Y-%m-%d')}.txt"
+        file_name = f"recibo_{recibo.data_entrada.strftime('%d-%m-%Y')}.txt"
     else:
         file_name = f"recibo_{recibo.id}.txt"
 
