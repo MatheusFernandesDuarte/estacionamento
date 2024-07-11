@@ -11,6 +11,23 @@
         <h1 class="mt-5">Recibos</h1>
         <a href="/" class="btn btn-secondary mt-3 mb-3">Voltar</a>
         <a href="/recibo/novo" class="btn btn-primary mt-3 mb-3">Novo Recibo</a>
+        
+        <!-- Mensagens de Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="alert-container">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+        
         <form method="POST" class="form-inline mb-3">
             <label for="cliente_id" class="mr-2">Filtrar por Cliente:</label>
             <select class="form-control mr-2" id="cliente_id" name="cliente_id">
@@ -35,7 +52,7 @@
             </thead>
             <tbody>
                 {% for recibo in recibos %}
-                <tr style="font-weight: {% if recibo.pago %}bold{% endif %};">
+                <tr {% if recibo.pago %}style="font-weight: bold;"{% endif %}>
                     <td>{{ recibo.id }}</td>
                     <td>{{ recibo.cliente.nome }}</td>
                     <td>
@@ -84,5 +101,8 @@
             </tbody>
         </table>
     </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

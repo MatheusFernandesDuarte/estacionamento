@@ -16,7 +16,7 @@
             const fieldsDiaria = document.getElementById('fields-diaria');
             const diariaCheckbox = document.getElementById('diaria');
             const diariaDiv = document.getElementById('diariaDiv');
-            
+
             if (mensalista || vinteQuatroHoras) {
                 fieldsMensalista.style.display = 'block';
                 fieldsNaoMensalista.style.display = 'none';
@@ -40,7 +40,7 @@
             const diariaCheckbox = document.getElementById('diaria');
             const fieldsDiaria = document.getElementById('fields-diaria');
             const fieldsNaoMensalista = document.getElementById('fields-nao-mensalista');
-            
+
             if (diariaCheckbox.checked) {
                 fieldsDiaria.style.display = 'block';
                 fieldsNaoMensalista.style.display = 'none';
@@ -53,7 +53,7 @@
         function validateForm() {
             const dataEntrada = document.getElementById('data_entrada').value;
             const dataSaida = document.getElementById('data_saida').value;
-            
+
             if (dataEntrada && dataSaida && dataEntrada > dataSaida) {
                 alert('A data de entrada não pode ser posterior à data de saída.');
                 return false;
@@ -98,7 +98,7 @@
                     <input type="date" class="form-control" id="data_diaria" name="data_diaria" value="{{ recibo.data_entrada.strftime('%Y-%m-%d') if recibo.data_entrada }}">
                 </div>
             </div>
-            <div id="fields-nao-mensalista">
+            <div id="fields-nao-mensalista" style="display:none;">
                 <div class="form-group">
                     <label for="data_entrada">Data de Entrada</label>
                     <input type="datetime-local" class="form-control" id="data_entrada" name="data_entrada" value="{{ recibo.data_entrada.strftime('%Y-%m-%dT%H:%M') if recibo.data_entrada }}">
@@ -110,7 +110,7 @@
             </div>
             <div class="form-group">
                 <label for="valor">Valor</label>
-                <input type="number" class="form-control" id="valor" name="valor" value="{{ recibo.valor }}" required>
+                <input type="number" class="form-control" id="valor" name="valor" value="{{ recibo.valor }}" required step="0.01">
             </div>
             <button type="submit" class="btn btn-primary mt-3">Salvar</button>
         </form>

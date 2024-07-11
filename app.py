@@ -82,11 +82,9 @@ def editar_cliente(id):
         return redirect(url_for('clientes'))
 
     if request.method == 'POST':
-        # Armazenar os valores atuais de mensalista e vinte_quatro_horas
         era_mensalista = cliente.mensalista
         era_vinte_quatro_horas = cliente.vinte_quatro_horas
 
-        # Atualizar os valores do cliente
         cliente.nome = request.form['nome']
         cliente.telefone = request.form['telefone']
         cliente.tipo_veiculo = request.form['tipo_veiculo']
@@ -98,11 +96,8 @@ def editar_cliente(id):
 
         try:
             db.session.commit()
-
-            # Verificar se houve mudança para mensalista ou vinte_quatro_horas
             if (not era_mensalista and cliente.mensalista) or (not era_vinte_quatro_horas and cliente.vinte_quatro_horas):
                 calcular_pagamentos_pendentes(cliente)
-            # Verificar se cliente deixou de ser mensalista ou vinte_quatro_horas
             elif (era_mensalista and not cliente.mensalista) or (era_vinte_quatro_horas and not cliente.vinte_quatro_horas):
                 apagar_recibos_futuros(cliente)
 
@@ -129,7 +124,6 @@ def deletar_cliente(id):
         flash('Cliente não encontrado.', 'danger')
         return redirect(url_for('clientes'))
 
-    # Verificar se o cliente possui recibos associados
     if cliente.recibos:
         flash('Não é possível deletar o cliente, pois ele possui recibos associados.', 'danger')
         return redirect(url_for('clientes'))
@@ -152,26 +146,12 @@ def novo_recibo():
         cliente_id = request.form['cliente_id']
         cliente = db.session.get(Cliente, cliente_id)
         
-        if cliente.mensalista:
+        if cliente.mensalista or cliente.vinte_quatro_horas:
             mes_referencia = request.form['mes_referencia']
             if not mes_referencia:
-                flash('Mês de referência é necessário para mensalistas.', 'danger')
+                flash('Mês de referência é necessário para mensalistas e clientes 24h.', 'danger')
                 return redirect(url_for('novo_recibo'))
-            if cliente.tipo_veiculo == 'carro pequeno':
-                valor = 320.0
-            elif cliente.tipo_veiculo == 'moto':
-                valor = 150.0
-            elif cliente.tipo_veiculo == 'SUV':
-                valor = 350.0
-            else:
-                valor = 150.0  # Valor padrão para outros tipos de veículos, se necessário
-            novo_recibo = Recibo(cliente_id=cliente_id, mes_referencia=mes_referencia, valor=valor)
-        elif cliente.vinte_quatro_horas:
-            valor = 400.0  # Valor fixo para clientes 24h
-            mes_referencia = request.form['mes_referencia']
-            if not mes_referencia:
-                flash('Mês de referência é necessário para clientes 24h.', 'danger')
-                return redirect(url_for('novo_recibo'))
+            valor = calcular_valor(cliente, mes_referencia)
             novo_recibo = Recibo(cliente_id=cliente_id, mes_referencia=mes_referencia, valor=valor)
         else:
             diaria = 'diaria' in request.form
@@ -181,7 +161,7 @@ def novo_recibo():
                     flash('Data é necessária para recibo de diária.', 'danger')
                     return redirect(url_for('novo_recibo'))
                 data_entrada = datetime.strptime(data_diaria, '%Y-%m-%d')
-                valor = 50.0  # valor fixo da diária
+                valor = 50.0
                 novo_recibo = Recibo(cliente_id=cliente_id, data_entrada=data_entrada, valor=valor)
             else:
                 data_entrada = request.form.get('data_entrada')
@@ -193,10 +173,7 @@ def novo_recibo():
                         flash('A data de entrada não pode ser posterior à data de saída.', 'danger')
                         return redirect(url_for('novo_recibo'))
                     horas = (data_saida - data_entrada).total_seconds() / 3600
-                    if horas > 5:
-                        valor = 50.0  # diária fixa para mais de 5 horas
-                    else:
-                        valor = 10.0 + int(horas) * 10.0  # valor por hora, começando em 10 reais
+                    valor = calcular_valor_por_horas(horas)
                     novo_recibo = Recibo(cliente_id=cliente_id, data_entrada=data_entrada, data_saida=data_saida, valor=valor)
                 else:
                     flash('Datas de entrada e saída são necessárias.', 'danger')
@@ -229,13 +206,13 @@ def recibos():
     
     return render_template('recibos.html', recibos=recibos, clientes=clientes)
 
-
+# Função para marcar e desmarcar um recibo como pago
 @app.route('/recibo/<int:id>/pago', methods=['POST'])
 def marcar_pago(id):
     recibo = db.session.get(Recibo, id)
-    recibo.pago = True
-    db.session.commit()
-
+    if recibo:
+        recibo.pago = not recibo.pago
+        db.session.commit()
     return redirect(url_for('recibos'))
 
 @app.route('/recibo/<int:id>/exportar')
@@ -247,13 +224,11 @@ def exportar_recibo(id):
     
     cliente = db.session.get(Cliente, recibo.cliente_id)
     
-    # Criar o diretório do cliente
     client_folder = secure_filename(cliente.nome)
     base_path = os.path.join('files', client_folder)
     if not os.path.exists(base_path):
         os.makedirs(base_path)
     
-    # Determinar o nome do arquivo
     if recibo.mes_referencia:
         file_name = f"recibo_{recibo.mes_referencia}.txt"
     elif recibo.data_entrada and recibo.data_saida:
@@ -263,7 +238,6 @@ def exportar_recibo(id):
     else:
         file_name = f"recibo_{recibo.id}.txt"
 
-    # Caminho completo do arquivo
     file_path = os.path.join(base_path, file_name)
 
     conteudo = (f"Recibo ID: {recibo.id}\n"
@@ -298,7 +272,7 @@ def editar_recibo(id):
             recibo.cliente_id = request.form['cliente_id']
             recibo.cliente = db.session.get(Cliente, recibo.cliente_id)
             recibo.mes_referencia = request.form['mes_referencia']
-            recibo.valor = float(request.form['valor'])  # Permitir edição do valor
+            recibo.valor = float(request.form['valor'])
             db.session.commit()
             flash('Recibo atualizado com sucesso!', 'success')
             return redirect(url_for('recibos'))
@@ -341,17 +315,14 @@ def calcular_pagamentos_pendentes(cliente):
     elif cliente.vinte_quatro_horas:
         valor_mensal = 400.0
     else:
-        valor_mensal = 0  # Valor padrão caso não seja mensalista nem 24h
+        valor_mensal = 0
         
-    # Calcula o número de dias no mês atual
     numero_dias_mes_atual = (proximo_mes - primeiro_dia_mes_atual).days
     valor_pro_rata = round(((valor_mensal / numero_dias_mes_atual) * diferenca_dias), 2)
 
-    # Primeiro pagamento pro rata
     novo_recibo = Recibo(cliente_id=cliente.id, mes_referencia=hoje.strftime('%Y-%m'), valor=valor_pro_rata)
     db.session.add(novo_recibo)
 
-    # Pagamentos mensais a partir do próximo mês
     for i in range(1, 13):
         mes_referencia = (hoje.replace(day=1) + timedelta(days=32 * i)).strftime('%Y-%m')
         novo_recibo = Recibo(cliente_id=cliente.id, mes_referencia=mes_referencia, valor=valor_mensal)
@@ -359,7 +330,25 @@ def calcular_pagamentos_pendentes(cliente):
 
     db.session.commit()
 
+def calcular_valor(cliente, mes_referencia):
+    tipo_veiculo_valores = {
+        'carro pequeno': 320.0,
+        'SUV': 350.0,
+        'moto': 150.0,
+    }
+    if cliente.vinte_quatro_horas:
+        return 400.0
+    return tipo_veiculo_valores.get(cliente.tipo_veiculo, 0)
+
+def calcular_valor_por_horas(horas):
+    if horas > 5:
+        return 50.0
+    return 10.0 + int(horas) * 10.0
+
 def verificar_renovar_recibos(cliente):
+    if not cliente.mensalista and not cliente.vinte_quatro_horas:
+        return
+
     tipo_veiculo_valores = {
         'carro pequeno': 320.0,
         'SUV': 350.0,
@@ -371,7 +360,7 @@ def verificar_renovar_recibos(cliente):
         ultimo_mes = datetime.strptime(ultimo_recibo.mes_referencia, '%Y-%m')
         proximo_mes = (ultimo_mes + timedelta(days=32)).replace(day=1)
 
-        if (datetime.now() - proximo_mes).days <= 30:
+        if (proximo_mes - datetime.now()).days <= 30:
             valor_mensal = 400.0 if cliente.vinte_quatro_horas else tipo_veiculo_valores.get(cliente.tipo_veiculo, 0)
 
             for i in range(12):
