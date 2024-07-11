@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from werkzeug.utils import secure_filename
 
@@ -24,6 +24,7 @@ class Cliente(db.Model):
     cpf_cnpj = db.Column(db.String(20), nullable=False)
     mensalista = db.Column(db.Boolean, default=False)
     vinte_quatro_horas = db.Column(db.Boolean, default=False)
+    data_cadastro = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
 class Recibo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -32,7 +33,7 @@ class Recibo(db.Model):
     data_saida = db.Column(db.DateTime, nullable=True)
     mes_referencia = db.Column(db.String(7), nullable=True)
     valor = db.Column(db.Float, nullable=False)
-
+    pago = db.Column(db.Boolean, default=False)
     cliente = db.relationship('Cliente', backref=db.backref('recibos', lazy=True))
 
 @app.route('/')
@@ -61,15 +62,14 @@ def novo_cliente():
                                vinte_quatro_horas=vinte_quatro_horas)
 
         try:
-            logger.debug(f"Adicionando cliente: {novo_cliente}")
             db.session.add(novo_cliente)
             db.session.commit()
-            logger.debug("Cliente adicionado com sucesso")
+            if mensalista or vinte_quatro_horas:
+                calcular_pagamentos_pendentes(novo_cliente)
             flash('Cliente cadastrado com sucesso!', 'success')
             return redirect(url_for('clientes'))
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Erro ao adicionar cliente: {e}")
             flash(f'Erro ao cadastrar cliente: {str(e)}', 'danger')
 
     return render_template('novo_cliente.html')
@@ -77,8 +77,16 @@ def novo_cliente():
 @app.route('/cliente/<int:id>/editar', methods=['GET', 'POST'])
 def editar_cliente(id):
     cliente = db.session.get(Cliente, id)
+    if not cliente:
+        flash('Cliente não encontrado.', 'danger')
+        return redirect(url_for('clientes'))
 
     if request.method == 'POST':
+        # Armazenar os valores atuais de mensalista e vinte_quatro_horas
+        era_mensalista = cliente.mensalista
+        era_vinte_quatro_horas = cliente.vinte_quatro_horas
+
+        # Atualizar os valores do cliente
         cliente.nome = request.form['nome']
         cliente.telefone = request.form['telefone']
         cliente.tipo_veiculo = request.form['tipo_veiculo']
@@ -90,6 +98,14 @@ def editar_cliente(id):
 
         try:
             db.session.commit()
+
+            # Verificar se houve mudança para mensalista ou vinte_quatro_horas
+            if (not era_mensalista and cliente.mensalista) or (not era_vinte_quatro_horas and cliente.vinte_quatro_horas):
+                calcular_pagamentos_pendentes(cliente)
+            # Verificar se cliente deixou de ser mensalista ou vinte_quatro_horas
+            elif (era_mensalista and not cliente.mensalista) or (era_vinte_quatro_horas and not cliente.vinte_quatro_horas):
+                apagar_recibos_futuros(cliente)
+
             flash('Cliente atualizado com sucesso!', 'success')
             return redirect(url_for('clientes'))
         except Exception as e:
@@ -97,6 +113,13 @@ def editar_cliente(id):
             flash(f'Erro ao atualizar cliente: {str(e)}', 'danger')
 
     return render_template('editar_cliente.html', cliente=cliente)
+
+def apagar_recibos_futuros(cliente):
+    hoje = datetime.now().strftime('%Y-%m')
+    recibos_futuros = Recibo.query.filter(Recibo.cliente_id == cliente.id, Recibo.mes_referencia > hoje).all()
+    for recibo in recibos_futuros:
+        db.session.delete(recibo)
+    db.session.commit()
 
 @app.route('/cliente/<int:id>/deletar', methods=['POST'])
 def deletar_cliente(id):
@@ -190,14 +213,38 @@ def novo_recibo():
 
     return render_template('novo_recibo.html', clientes=clientes)
 
-@app.route('/recibos')
+@app.route('/recibos', methods=['GET', 'POST'])
 def recibos():
-    recibos = Recibo.query.all()
-    return render_template('recibos.html', recibos=recibos)
+    clientes = Cliente.query.all()
+    cliente_id = request.form.get('cliente_id')
+
+    if cliente_id:
+        cliente = Cliente.query.get(cliente_id)
+        verificar_renovar_recibos(cliente)
+        recibos = Recibo.query.filter_by(cliente_id=cliente_id).all()
+    else:
+        recibos = Recibo.query.all()
+        for cliente in clientes:
+            verificar_renovar_recibos(cliente)
+    
+    return render_template('recibos.html', recibos=recibos, clientes=clientes)
+
+
+@app.route('/recibo/<int:id>/pago', methods=['POST'])
+def marcar_pago(id):
+    recibo = db.session.get(Recibo, id)
+    recibo.pago = True
+    db.session.commit()
+
+    return redirect(url_for('recibos'))
 
 @app.route('/recibo/<int:id>/exportar')
 def exportar_recibo(id):
     recibo = db.session.get(Recibo, id)
+    if not recibo.pago:
+        flash('Apenas recibos pagos podem ser exportados.', 'danger')
+        return redirect(url_for('recibos'))
+    
     cliente = db.session.get(Cliente, recibo.cliente_id)
     
     # Criar o diretório do cliente
@@ -206,7 +253,7 @@ def exportar_recibo(id):
     if not os.path.exists(base_path):
         os.makedirs(base_path)
     
-     # Determinar o nome do arquivo
+    # Determinar o nome do arquivo
     if recibo.mes_referencia:
         file_name = f"recibo_{recibo.mes_referencia}.txt"
     elif recibo.data_entrada and recibo.data_saida:
@@ -229,7 +276,8 @@ def exportar_recibo(id):
                 f"Data de Entrada: {recibo.data_entrada}\n"
                 f"Data de Saída: {recibo.data_saida}\n"
                 f"Mês de Referência: {recibo.mes_referencia}\n"
-                f"Valor: {recibo.valor}\n")
+                f"Valor: {recibo.valor}\n"
+                f"Pago: {'Sim' if recibo.pago else 'Não'}\n")
 
     with open(file_path, "w") as file:
         file.write(conteudo)
@@ -239,49 +287,18 @@ def exportar_recibo(id):
 @app.route('/recibo/<int:id>/editar', methods=['GET', 'POST'])
 def editar_recibo(id):
     recibo = db.session.get(Recibo, id)
+    if not recibo:
+        flash('Recibo não encontrado.', 'danger')
+        return redirect(url_for('recibos'))
+    
     clientes = Cliente.query.all()
-
+    
     if request.method == 'POST':
-        cliente_id = request.form['cliente_id']
-        recibo.cliente_id = cliente_id
-        recibo.cliente = db.session.get(Cliente, cliente_id)
-        
-        if recibo.cliente.mensalista:
-            recibo.mes_referencia = request.form['mes_referencia']
-            recibo.data_entrada = None
-            recibo.data_saida = None
-            recibo.valor = 150.0  # valor fixo para mensalistas
-        else:
-            diaria = 'diaria' in request.form
-            if diaria:
-                data_diaria = request.form['data_diaria']
-                if not data_diaria:
-                    flash('Data é necessária para recibo de diária.', 'danger')
-                    return redirect(url_for('editar_recibo', id=id))
-                recibo.data_entrada = datetime.strptime(data_diaria, '%Y-%m-%d')
-                recibo.data_saida = None
-                recibo.valor = 50.0  # valor fixo da diária
-            else:
-                data_entrada = request.form.get('data_entrada')
-                data_saida = request.form.get('data_saida')
-                if data_entrada and data_saida:
-                    data_entrada = datetime.strptime(data_entrada, '%Y-%m-%dT%H:%M')
-                    data_saida = datetime.strptime(data_saida, '%Y-%m-%dT%H:%M')
-                    if data_entrada > data_saida:
-                        flash('A data de entrada não pode ser posterior à data de saída.', 'danger')
-                        return redirect(url_for('editar_recibo', id=id))
-                    horas = (data_saida - data_entrada).total_seconds() / 3600
-                    if horas > 5:
-                        recibo.valor = 50.0  # diária fixa para mais de 5 horas
-                    else:
-                        recibo.valor = 10.0 + int(horas) * 10.0  # valor por hora, começando em 10 reais
-                    recibo.data_entrada = data_entrada
-                    recibo.data_saida = data_saida
-                else:
-                    flash('Datas de entrada e saída são necessárias.', 'danger')
-                    return redirect(url_for('editar_recibo', id=id))
-
         try:
+            recibo.cliente_id = request.form['cliente_id']
+            recibo.cliente = db.session.get(Cliente, recibo.cliente_id)
+            recibo.mes_referencia = request.form['mes_referencia']
+            recibo.valor = float(request.form['valor'])  # Permitir edição do valor
             db.session.commit()
             flash('Recibo atualizado com sucesso!', 'success')
             return redirect(url_for('recibos'))
@@ -290,6 +307,7 @@ def editar_recibo(id):
             flash(f'Erro ao atualizar recibo: {str(e)}', 'danger')
 
     return render_template('editar_recibo.html', recibo=recibo, clientes=clientes)
+
 
 @app.route('/recibo/<int:id>/deletar', methods=['POST'])
 def deletar_recibo(id):
@@ -304,6 +322,64 @@ def deletar_recibo(id):
         flash(f'Erro ao deletar recibo: {str(e)}', 'danger')
     
     return redirect(url_for('recibos'))
+
+def calcular_pagamentos_pendentes(cliente):
+    tipo_veiculo_valores = {
+        'carro pequeno': 320.0,
+        'SUV': 350.0,
+        'moto': 150.0,
+    }
+
+    hoje = datetime.now()
+    primeiro_dia_mes_atual = hoje.replace(day=1)
+    proximo_mes = (primeiro_dia_mes_atual + timedelta(days=32)).replace(day=1)
+    dia_5_proximo_mes = proximo_mes.replace(day=5)
+    diferenca_dias = (dia_5_proximo_mes - hoje).days
+    
+    if cliente.mensalista:
+        valor_mensal = tipo_veiculo_valores.get(cliente.tipo_veiculo, 0)
+    elif cliente.vinte_quatro_horas:
+        valor_mensal = 400.0
+    else:
+        valor_mensal = 0  # Valor padrão caso não seja mensalista nem 24h
+        
+    # Calcula o número de dias no mês atual
+    numero_dias_mes_atual = (proximo_mes - primeiro_dia_mes_atual).days
+    valor_pro_rata = round(((valor_mensal / numero_dias_mes_atual) * diferenca_dias), 2)
+
+    # Primeiro pagamento pro rata
+    novo_recibo = Recibo(cliente_id=cliente.id, mes_referencia=hoje.strftime('%Y-%m'), valor=valor_pro_rata)
+    db.session.add(novo_recibo)
+
+    # Pagamentos mensais a partir do próximo mês
+    for i in range(1, 13):
+        mes_referencia = (hoje.replace(day=1) + timedelta(days=32 * i)).strftime('%Y-%m')
+        novo_recibo = Recibo(cliente_id=cliente.id, mes_referencia=mes_referencia, valor=valor_mensal)
+        db.session.add(novo_recibo)
+
+    db.session.commit()
+
+def verificar_renovar_recibos(cliente):
+    tipo_veiculo_valores = {
+        'carro pequeno': 320.0,
+        'SUV': 350.0,
+        'moto': 150.0,
+    }
+
+    ultimo_recibo = Recibo.query.filter_by(cliente_id=cliente.id).order_by(Recibo.mes_referencia.desc()).first()
+    if ultimo_recibo:
+        ultimo_mes = datetime.strptime(ultimo_recibo.mes_referencia, '%Y-%m')
+        proximo_mes = (ultimo_mes + timedelta(days=32)).replace(day=1)
+
+        if (datetime.now() - proximo_mes).days <= 30:
+            valor_mensal = 400.0 if cliente.vinte_quatro_horas else tipo_veiculo_valores.get(cliente.tipo_veiculo, 0)
+
+            for i in range(12):
+                mes_referencia = (proximo_mes + timedelta(days=32 * i)).strftime('%Y-%m')
+                novo_recibo = Recibo(cliente_id=cliente.id, mes_referencia=mes_referencia, valor=valor_mensal)
+                db.session.add(novo_recibo)
+
+            db.session.commit()
 
 if __name__ == '__main__':
     with app.app_context():
