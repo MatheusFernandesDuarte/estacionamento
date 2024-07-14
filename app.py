@@ -118,8 +118,12 @@ def editar_cliente(id):
 
         try:
             if (era_mensalista != cliente.mensalista or era_vinte_quatro_horas != cliente.vinte_quatro_horas or tipo_veiculo_anterior != cliente.tipo_veiculo):
-                # Atualizar recibos futuros não pagos
-                atualizar_recibos_futuros(cliente)
+                # Atualizar recibos futuros não pagos se o plano mudou
+                if cliente.mensalista or cliente.vinte_quatro_horas:
+                    atualizar_recibos_futuros(cliente)
+                else:
+                    apagar_recibos_futuros(cliente)
+                calcular_pagamentos_pendentes(cliente)
 
             db.session.commit()
             flash('Cliente atualizado com sucesso!', 'success')
@@ -142,6 +146,13 @@ def atualizar_recibos_futuros(cliente):
 
     for recibo in recibos_futuros:
         recibo.valor = valor_mensal
+    db.session.commit()
+
+def apagar_recibos_futuros(cliente):
+    hoje = datetime.now().strftime('%Y-%m')
+    recibos_futuros = Recibo.query.filter(Recibo.cliente_id == cliente.id, Recibo.mes_referencia >= hoje).all()
+    for recibo in recibos_futuros:
+        db.session.delete(recibo)
     db.session.commit()
 
 @app.route('/cliente/<int:id>/deletar', methods=['POST'])
