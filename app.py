@@ -97,6 +97,22 @@ def novo_cliente():
         mensalista = 'mensalista' in request.form
         vinte_quatro_horas = 'vinte_quatro_horas' in request.form
 
+        # Verificar se já existe um cliente com todas as mesmas informações
+        cliente_existente = Cliente.query.filter_by(
+            nome=nome,
+            telefone=telefone,
+            tipo_veiculo=tipo_veiculo,
+            modelo=modelo,
+            placa=placa,
+            cpf_cnpj=cpf_cnpj,
+            mensalista=mensalista,
+            vinte_quatro_horas=vinte_quatro_horas
+        ).first()
+
+        if cliente_existente:
+            flash('Já existe um cliente com todas essas informações.', 'danger')
+            return redirect(url_for('clientes'))
+        
         novo_cliente = Cliente(nome=nome, telefone=telefone, tipo_veiculo=tipo_veiculo,
                                modelo=modelo, placa=placa, cpf_cnpj=cpf_cnpj, mensalista=mensalista,
                                vinte_quatro_horas=vinte_quatro_horas)
@@ -423,7 +439,7 @@ def exportar_recibo(id):
 
     elif recibo.data_entrada:
         file_name = f"recibo_{recibo.data_entrada.strftime('%d-%m-%Y')}.pdf"
-        
+
     else:
         file_name = f"recibo_{recibo.id}.pdf"
 
