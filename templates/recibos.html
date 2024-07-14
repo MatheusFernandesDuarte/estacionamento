@@ -48,7 +48,6 @@
                     <th>Cliente</th>
                     <th>Data de Entrada</th>
                     <th>Data de Saída</th>
-                    <th>Mês de Referência</th>
                     <th>Valor</th>
                     <th>Pago</th>
                     <th>Ações</th>
@@ -61,7 +60,6 @@
                     <td>{{ recibo.cliente.nome }}</td>
                     <td>{{ recibo.data_entrada.strftime('%d/%m/%Y %H:%M') if recibo.data_entrada else '' }}</td>
                     <td>{{ recibo.data_saida.strftime('%d/%m/%Y %H:%M') if recibo.data_saida else '' }}</td>
-                    <td>{{ recibo.mes_referencia }}</td>
                     <td>{{ recibo.valor }}</td>
                     <td>
                         <form method="POST" action="{{ url_for('marcar_pago', id=recibo.id) }}" style="display:inline-block;">

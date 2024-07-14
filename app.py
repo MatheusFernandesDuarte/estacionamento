@@ -5,6 +5,14 @@ import logging
 from werkzeug.utils import secure_filename
 import builtins
 import os
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import Paragraph, Frame
+import locale
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///clientes.db'
@@ -401,33 +409,87 @@ def exportar_recibo(id):
         os.makedirs(base_path)
     
     if recibo.mes_referencia:
-        file_name = f"recibo_{recibo.mes_referencia}.txt"
+        mes_referencia_date = datetime.strptime(recibo.mes_referencia, '%Y-%m')
+
+        if not recibo.data_entrada:
+            recibo.data_entrada = mes_referencia_date.replace(day=5)
+        if not recibo.data_saida:
+            recibo.data_saida = (mes_referencia_date + timedelta(days=32)).replace(day=5)
+
+        file_name = f"recibo_{recibo.data_entrada.strftime('%d-%m-%Y')}_a_{recibo.data_saida.strftime('%d-%m-%Y')}.pdf"
+
     elif recibo.data_entrada and recibo.data_saida:
-        file_name = f"recibo_{recibo.data_entrada.strftime('%d-%m-%Y')}_a_{recibo.data_saida.strftime('%d-%m-%Y')}.txt"
+        file_name = f"recibo_{recibo.data_entrada.strftime('%d-%m-%Y')}_a_{recibo.data_saida.strftime('%d-%m-%Y')}.pdf"
+
     elif recibo.data_entrada:
-        file_name = f"recibo_{recibo.data_entrada.strftime('%d-%m-%Y')}.txt"
+        file_name = f"recibo_{recibo.data_entrada.strftime('%d-%m-%Y')}.pdf"
+        
     else:
-        file_name = f"recibo_{recibo.id}.txt"
+        file_name = f"recibo_{recibo.id}.pdf"
 
     file_path = os.path.join(base_path, file_name)
 
-    conteudo = (f"Recibo ID: {recibo.id}\n"
-                f"Cliente: {cliente.nome}\n"
-                f"Telefone: {cliente.telefone}\n"
-                f"Tipo de Veículo: {cliente.tipo_veiculo}\n"
-                f"Modelo: {cliente.modelo}\n"
-                f"Placa: {cliente.placa}\n"
-                f"CPF/CNPJ: {cliente.cpf_cnpj}\n"
-                f"Data de Entrada: {recibo.data_entrada}\n"
-                f"Data de Saída: {recibo.data_saida}\n"
-                f"Mês de Referência: {recibo.mes_referencia}\n"
-                f"Valor: {recibo.valor}\n"
-                f"Pago: {'Sim' if recibo.pago else 'Não'}\n")
-
-    with open(file_path, "w") as file:
-        file.write(conteudo)
+    criar_recibo(
+        valor=recibo.valor,
+        cliente=cliente.nome,
+        data_de_entrada=recibo.data_entrada.strftime('%d/%m/%Y'),
+        data_de_saida=recibo.data_saida.strftime('%d/%m/%Y'),
+        veiculo=cliente.modelo,
+        placa=cliente.placa,
+        output_path=file_path
+    )
 
     return send_file(file_path, as_attachment=True)
+
+def criar_recibo(valor: float, cliente: str, data_de_entrada: str, data_de_saida: str, veiculo: str, placa: str, output_path: str) -> None:
+    # Setting locale for currency formatting
+    locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+
+    # Formatting the currency value
+    valor_formatado = locale.currency(valor, grouping=True).replace(" ", "", 1)
+
+    # Creating the canvas
+    cnv = canvas.Canvas(filename=output_path, pagesize=(945, 591))
+
+    # Registering the font
+    pdfmetrics.registerFont(TTFont('Arial', "Arial.ttf"))
+
+    # Drawing the template image
+    cnv.drawImage(image=os.path.join(os.path.abspath(""), "img", "template_recibo.png"), x=0, y=0)
+
+    # Setting font and color for the value text
+    cnv.setFont(psfontname="Arial", size=50)
+    cnv.setFillColor(colors.black)
+
+    # Drawing the value text
+    cnv.drawString(x=650, y=434, text=valor_formatado)
+
+    # Defining the text to be wrapped
+    text = f"Recebemos de {cliente} o valor mencionado referente a um estacionamento com manobrista para o veículo {veiculo} (placa {placa}) no período de {data_de_entrada} a {data_de_saida}."
+
+    # Defining a custom style for the paragraph
+    styles = getSampleStyleSheet()
+    justified_style = ParagraphStyle(
+        name='Justified',
+        parent=styles['Normal'],
+        fontName='Arial',
+        fontSize=30,
+        leading=35,
+        alignment=4  # Justified alignment
+    )
+
+    # Creating the paragraph
+    paragraph = Paragraph(text, justified_style)
+
+    # Creating a frame to fit the paragraph
+    frame = Frame(50, 125, 845, 200, showBoundary=0)
+
+    # Drawing the paragraph inside the frame
+    frame.addFromList([paragraph], cnv)
+
+    # Finalizing the PDF
+    cnv.showPage()
+    cnv.save()
 
 @app.route('/recibo/<int:id>/editar', methods=['GET', 'POST'])
 def editar_recibo(id):
