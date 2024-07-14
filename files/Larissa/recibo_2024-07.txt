@@ -1,0 +1,12 @@
+Recibo ID: 14
+Cliente: Larissa
+Telefone: 48996051150
+Tipo de Veículo: SUV
+Modelo: das
+Placa: dsa
+CPF/CNPJ: 432432
+Data de Entrada: None
+Data de Saída: None
+Mês de Referência: 2024-07
+Valor: 283.87
+Pago: Sim

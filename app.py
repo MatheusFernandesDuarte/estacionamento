@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 import logging
@@ -36,6 +36,11 @@ class Recibo(db.Model):
     pago = db.Column(db.Boolean, default=False)
     cliente = db.relationship('Cliente', backref=db.backref('recibos', lazy=True))
 
+class Plano(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    tipo_veiculo = db.Column(db.String(20), nullable=False, unique=True)
+    valor = db.Column(db.Float, nullable=False)
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -44,6 +49,17 @@ def index():
 def clientes():
     clientes = Cliente.query.all()
     return render_template('clientes.html', clientes=clientes)
+
+def inicializar_planos():
+    tipos_veiculos = ['carro pequeno', 'SUV', 'moto', 'vinte_quatro_horas']
+    valores_iniciais = [320.0, 350.0, 150.0, 400.0]
+
+    for tipo, valor in zip(tipos_veiculos, valores_iniciais):
+        plano = Plano.query.filter_by(tipo_veiculo=tipo).first()
+        if not plano:
+            novo_plano = Plano(tipo_veiculo=tipo, valor=valor)
+            db.session.add(novo_plano)
+    db.session.commit()
 
 @app.route('/cliente/novo', methods=['GET', 'POST'])
 def novo_cliente():
@@ -84,6 +100,7 @@ def editar_cliente(id):
     if request.method == 'POST':
         era_mensalista = cliente.mensalista
         era_vinte_quatro_horas = cliente.vinte_quatro_horas
+        tipo_veiculo_anterior = cliente.tipo_veiculo
 
         cliente.nome = request.form['nome']
         cliente.telefone = request.form['telefone']
@@ -94,13 +111,17 @@ def editar_cliente(id):
         cliente.mensalista = 'mensalista' in request.form
         cliente.vinte_quatro_horas = 'vinte_quatro_horas' in request.form
 
-        try:
-            db.session.commit()
-            if (not era_mensalista and cliente.mensalista) or (not era_vinte_quatro_horas and cliente.vinte_quatro_horas):
-                calcular_pagamentos_pendentes(cliente)
-            elif (era_mensalista and not cliente.mensalista) or (era_vinte_quatro_horas and not cliente.vinte_quatro_horas):
-                apagar_recibos_futuros(cliente)
+        # Verificar se o cliente está sendo marcado como mensalista e 24h ao mesmo tempo
+        if cliente.mensalista and cliente.vinte_quatro_horas:
+            flash('Um cliente não pode ser marcado como Mensalista e 24h ao mesmo tempo.', 'danger')
+            return redirect(url_for('editar_cliente', id=id))
 
+        try:
+            if (era_mensalista != cliente.mensalista or era_vinte_quatro_horas != cliente.vinte_quatro_horas or tipo_veiculo_anterior != cliente.tipo_veiculo):
+                # Atualizar recibos futuros não pagos
+                atualizar_recibos_futuros(cliente)
+
+            db.session.commit()
             flash('Cliente atualizado com sucesso!', 'success')
             return redirect(url_for('clientes'))
         except Exception as e:
@@ -109,11 +130,18 @@ def editar_cliente(id):
 
     return render_template('editar_cliente.html', cliente=cliente)
 
-def apagar_recibos_futuros(cliente):
+def atualizar_recibos_futuros(cliente):
     hoje = datetime.now().strftime('%Y-%m')
-    recibos_futuros = Recibo.query.filter(Recibo.cliente_id == cliente.id, Recibo.mes_referencia > hoje).all()
+    recibos_futuros = Recibo.query.filter(Recibo.cliente_id == cliente.id, Recibo.mes_referencia >= hoje, Recibo.pago == False).all()
+    
+    plano = Plano.query.filter_by(tipo_veiculo=cliente.tipo_veiculo).first()
+    valor_mensal = plano.valor if plano else 0
+    if cliente.vinte_quatro_horas:
+        plano_24h = Plano.query.filter_by(tipo_veiculo='vinte_quatro_horas').first()
+        valor_mensal = plano_24h.valor if plano_24h else 0
+
     for recibo in recibos_futuros:
-        db.session.delete(recibo)
+        recibo.valor = valor_mensal
     db.session.commit()
 
 @app.route('/cliente/<int:id>/deletar', methods=['POST'])
@@ -124,11 +152,17 @@ def deletar_cliente(id):
         flash('Cliente não encontrado.', 'danger')
         return redirect(url_for('clientes'))
 
-    if cliente.recibos:
-        flash('Não é possível deletar o cliente, pois ele possui recibos associados.', 'danger')
+    # Verificar se o cliente possui recibos e se todos os recibos estão pagos
+    recibos = Recibo.query.filter_by(cliente_id=cliente.id).all()
+    if recibos and any(not recibo.pago for recibo in recibos):
+        flash('Não é possível deletar o cliente, pois ele possui recibos não pagos.', 'danger')
         return redirect(url_for('clientes'))
 
     try:
+        # Apagar os recibos do cliente antes de apagar o cliente
+        for recibo in recibos:
+            db.session.delete(recibo)
+        
         db.session.delete(cliente)
         db.session.commit()
         flash('Cliente deletado com sucesso!', 'success')
@@ -298,25 +332,18 @@ def deletar_recibo(id):
     return redirect(url_for('recibos'))
 
 def calcular_pagamentos_pendentes(cliente):
-    tipo_veiculo_valores = {
-        'carro pequeno': 320.0,
-        'SUV': 350.0,
-        'moto': 150.0,
-    }
-
     hoje = datetime.now()
     primeiro_dia_mes_atual = hoje.replace(day=1)
     proximo_mes = (primeiro_dia_mes_atual + timedelta(days=32)).replace(day=1)
     dia_5_proximo_mes = proximo_mes.replace(day=5)
     diferenca_dias = (dia_5_proximo_mes - hoje).days
-    
-    if cliente.mensalista:
-        valor_mensal = tipo_veiculo_valores.get(cliente.tipo_veiculo, 0)
-    elif cliente.vinte_quatro_horas:
-        valor_mensal = 400.0
-    else:
-        valor_mensal = 0
-        
+
+    plano = Plano.query.filter_by(tipo_veiculo=cliente.tipo_veiculo).first()
+    valor_mensal = plano.valor if plano else 0
+    if cliente.vinte_quatro_horas:
+        plano_24h = Plano.query.filter_by(tipo_veiculo='vinte_quatro_horas').first()
+        valor_mensal = plano_24h.valor if plano_24h else 0
+
     numero_dias_mes_atual = (proximo_mes - primeiro_dia_mes_atual).days
     valor_pro_rata = round(((valor_mensal / numero_dias_mes_atual) * diferenca_dias), 2)
 
@@ -331,14 +358,11 @@ def calcular_pagamentos_pendentes(cliente):
     db.session.commit()
 
 def calcular_valor(cliente, mes_referencia):
-    tipo_veiculo_valores = {
-        'carro pequeno': 320.0,
-        'SUV': 350.0,
-        'moto': 150.0,
-    }
+    plano = Plano.query.filter_by(tipo_veiculo=cliente.tipo_veiculo).first()
     if cliente.vinte_quatro_horas:
-        return 400.0
-    return tipo_veiculo_valores.get(cliente.tipo_veiculo, 0)
+        plano = Plano.query.filter_by(tipo_veiculo='vinte_quatro_horas').first()
+    return plano.valor if plano else 0
+
 
 def calcular_valor_por_horas(horas):
     if horas > 5:
@@ -370,7 +394,46 @@ def verificar_renovar_recibos(cliente):
 
             db.session.commit()
 
+@app.route('/configurar_planos', methods=['GET', 'POST'])
+def configurar_planos():
+    if request.method == 'POST':
+        valores = {
+            'carro pequeno': request.form['carro_pequeno'],
+            'SUV': request.form['suv'],
+            'moto': request.form['moto'],
+            'vinte_quatro_horas': request.form['vinte_quatro_horas']
+        }
+
+        for tipo, valor in valores.items():
+            plano = Plano.query.filter_by(tipo_veiculo=tipo).first()
+            if plano:
+                plano.valor = float(valor)
+            else:
+                novo_plano = Plano(tipo_veiculo=tipo, valor=float(valor))
+                db.session.add(novo_plano)
+
+        db.session.commit()
+        flash('Valores dos planos atualizados com sucesso!', 'success')
+        return redirect(url_for('clientes'))
+
+    planos = Plano.query.all()
+    valores_planos = {plano.tipo_veiculo: plano.valor for plano in planos}
+
+    return render_template('configurar_planos.html', valores=valores_planos)
+
+# Função para obter os valores dos planos
+@app.route('/get_planos_valores')
+def get_planos_valores():
+    valores_planos = app.config.get('PLANOS_VALORES', {
+        'carro_pequeno': 320.0,
+        'suv': 350.0,
+        'moto': 150.0,
+        'vinte_quatro_horas': 400.0
+    })
+    return jsonify(valores_planos)
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        inicializar_planos()
     app.run(debug=True)

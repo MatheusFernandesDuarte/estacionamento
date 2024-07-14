@@ -1,4 +1,3 @@
-<!-- novo_cliente.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Novo Cliente</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script>
+        function toggleCheckbox(checkbox) {
+            const mensalistaCheckbox = document.getElementById('mensalista');
+            const vinteQuatroHorasCheckbox = document.getElementById('vinte_quatro_horas');
+            if (checkbox.id === 'mensalista' && checkbox.checked) {
+                vinteQuatroHorasCheckbox.checked = false;
+            } else if (checkbox.id === 'vinte_quatro_horas' && checkbox.checked) {
+                mensalistaCheckbox.checked = false;
+            }
+        }
+    </script>
 </head>
 <body>
     <div class="container">
@@ -42,11 +52,11 @@
                 <input type="text" class="form-control" id="cpf_cnpj" name="cpf_cnpj" required>
             </div>
             <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="mensalista" name="mensalista">
+                <input type="checkbox" class="form-check-input" id="mensalista" name="mensalista" onclick="toggleCheckbox(this)">
                 <label class="form-check-label" for="mensalista">Mensalista</label>
             </div>
             <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="vinte_quatro_horas" name="vinte_quatro_horas">
+                <input type="checkbox" class="form-check-input" id="vinte_quatro_horas" name="vinte_quatro_horas" onclick="toggleCheckbox(this)">
                 <label class="form-check-label" for="vinte_quatro_horas">24h</label>
             </div>
             <button type="submit" class="btn btn-primary mt-3">Salvar</button>

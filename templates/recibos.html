@@ -33,7 +33,7 @@
             <select class="form-control mr-2" id="cliente_id" name="cliente_id">
                 <option value="">Todos</option>
                 {% for cliente in clientes %}
-                <option value="{{ cliente.id }}">{{ cliente.nome }}</option>
+                <option value="{{ cliente.id }}">{{ cliente.nome }} - {{ cliente.modelo }} - {{ cliente.placa }}</option>
                 {% endfor %}
             </select>
             <button type="submit" class="btn btn-primary">Filtrar</button>

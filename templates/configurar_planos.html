@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar Planos</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Configurar Valores dos Planos</h1>
+        <a href="/clientes" class="btn btn-secondary mt-3 mb-3">Voltar</a>
+        <form method="POST">
+            <div class="form-group">
+                <label for="carro_pequeno">Mensalista para Carro Pequeno</label>
+                <input type="number" class="form-control" id="carro_pequeno" name="carro_pequeno" required value="{{ valores['carro pequeno'] }}">
+            </div>
+            <div class="form-group">
+                <label for="suv">Mensalista para SUV</label>
+                <input type="number" class="form-control" id="suv" name="suv" required value="{{ valores.SUV }}">
+            </div>
+            <div class="form-group">
+                <label for="moto">Mensalista para Moto</label>
+                <input type="number" class="form-control" id="moto" name="moto" required value="{{ valores.moto }}">
+            </div>
+            <div class="form-group">
+                <label for="vinte_quatro_horas">24h</label>
+                <input type="number" class="form-control" id="vinte_quatro_horas" name="vinte_quatro_horas" required value="{{ valores.vinte_quatro_horas }}">
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">Salvar</button>
+        </form>
+    </div>
+</body>
+</html>

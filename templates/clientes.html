@@ -11,7 +11,8 @@
         <h1 class="mt-5">Clientes</h1>
         <a href="/" class="btn btn-secondary mt-3 mb-3">Voltar</a>
         <a href="/cliente/novo" class="btn btn-primary mt-3 mb-3">Novo Cliente</a>
-        
+        <a href="/configurar_planos" class="btn btn-info mt-3 mb-3">Configurar Valores dos Planos</a>
+
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -19,7 +20,7 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        
+
         <table class="table table-striped">
             <thead>
                 <tr>
