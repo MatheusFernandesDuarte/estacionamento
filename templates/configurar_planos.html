@@ -1,3 +1,4 @@
+<!-- /mnt/data/configurar_planos.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,6 +27,14 @@
             <div class="form-group">
                 <label for="vinte_quatro_horas">24h</label>
                 <input type="number" class="form-control" id="vinte_quatro_horas" name="vinte_quatro_horas" required value="{{ valores.vinte_quatro_horas }}">
+            </div>
+            <div class="form-group">
+                <label for="valor_hora">Valor por Hora</label>
+                <input type="number" class="form-control" id="valor_hora" name="valor_hora" required value="{{ valores.valor_hora }}">
+            </div>
+            <div class="form-group">
+                <label for="valor_diaria">Valor da Diária</label>
+                <input type="number" class="form-control" id="valor_diaria" name="valor_diaria" required value="{{ valores.valor_diaria }}">
             </div>
             <button type="submit" class="btn btn-primary mt-3">Salvar</button>
         </form>

@@ -11,31 +11,34 @@
         <h1 class="mt-5">Recibos</h1>
         <a href="/" class="btn btn-secondary mt-3 mb-3">Voltar</a>
         <a href="/recibo/novo" class="btn btn-primary mt-3 mb-3">Novo Recibo</a>
-        
-        <!-- Mensagens de Flash -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div class="alert-container">
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+        <form method="POST" class="mb-3">
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="cliente_id">Cliente</label>
+                    <select class="form-control" id="cliente_id" name="cliente_id">
+                        <option value="">Todos os clientes</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id }}" {% if request.form.get('cliente_id') == str(cliente.id) %}selected{% endif %}>{{ cliente.nome }} - {{ cliente.modelo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="data_entrada_inicio">Data de Entrada Início</label>
+                    <input type="date" class="form-control" id="data_entrada_inicio" name="data_entrada_inicio" value="{{ request.form.get('data_entrada_inicio') }}">
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="data_entrada_fim">Data de Entrada Fim</label>
+                    <input type="date" class="form-control" id="data_entrada_fim" name="data_entrada_fim" value="{{ request.form.get('data_entrada_fim') }}">
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="pago">Pago</label>
+                    <select class="form-control" id="pago" name="pago">
+                        <option value="">Todos</option>
+                        <option value="true" {% if request.form.get('pago') == 'true' %}selected{% endif %}>Pago</option>
+                        <option value="false" {% if request.form.get('pago') == 'false' %}selected{% endif %}>Não Pago</option>
+                    </select>
+                </div>
             </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        {% endwith %}
-        
-        <form method="POST" class="form-inline mb-3">
-            <label for="cliente_id" class="mr-2">Filtrar por Cliente:</label>
-            <select class="form-control mr-2" id="cliente_id" name="cliente_id">
-                <option value="">Todos</option>
-                {% for cliente in clientes %}
-                <option value="{{ cliente.id }}">{{ cliente.nome }} - {{ cliente.modelo }} - {{ cliente.placa }}</option>
-                {% endfor %}
-            </select>
             <button type="submit" class="btn btn-primary">Filtrar</button>
         </form>
         <table class="table table-striped">
@@ -45,6 +48,7 @@
                     <th>Cliente</th>
                     <th>Data de Entrada</th>
                     <th>Data de Saída</th>
+                    <th>Mês de Referência</th>
                     <th>Valor</th>
                     <th>Pago</th>
                     <th>Ações</th>
@@ -55,54 +59,28 @@
                 <tr {% if recibo.pago %}style="font-weight: bold;"{% endif %}>
                     <td>{{ recibo.id }}</td>
                     <td>{{ recibo.cliente.nome }}</td>
-                    <td>
-                        {% if recibo.data_entrada %}
-                            {% if not recibo.data_saida %}
-                                Diária - {{ recibo.data_entrada.strftime('%d/%m/%Y') }}
-                            {% else %}
-                                {{ recibo.data_entrada.strftime('%d/%m/%Y %H:%M') }}
-                            {% endif %}
-                        {% elif recibo.mes_referencia %}
-                            Mensalista - {{ recibo.mes_referencia.split('-')[1] }}/{{ recibo.mes_referencia.split('-')[0] }}
-                        {% else %}
-                            None
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if recibo.data_saida %}
-                            {{ recibo.data_saida.strftime('%d/%m/%Y %H:%M') }}
-                        {% elif recibo.data_entrada and not recibo.data_saida %}
-                            Diária - {{ recibo.data_entrada.strftime('%d/%m/%Y') }}
-                        {% elif recibo.mes_referencia %}
-                            Mensalista - {{ recibo.mes_referencia.split('-')[1] }}/{{ recibo.mes_referencia.split('-')[0] }}
-                        {% else %}
-                            None
-                        {% endif %}
-                    </td>
+                    <td>{{ recibo.data_entrada.strftime('%d/%m/%Y %H:%M') if recibo.data_entrada else '' }}</td>
+                    <td>{{ recibo.data_saida.strftime('%d/%m/%Y %H:%M') if recibo.data_saida else '' }}</td>
+                    <td>{{ recibo.mes_referencia }}</td>
                     <td>{{ recibo.valor }}</td>
                     <td>
-                        <form action="/recibo/{{ recibo.id }}/pago" method="POST">
-                            <input type="checkbox" {% if recibo.pago %}checked{% endif %} onchange="this.form.submit()">
+                        <form method="POST" action="{{ url_for('marcar_pago', id=recibo.id) }}" style="display:inline-block;">
+                            <input type="checkbox" name="pago" {% if recibo.pago %}checked{% endif %} onclick="this.form.submit()">
                         </form>
                     </td>
                     <td>
-                        {% if recibo.pago %}
-                        <a href="/recibo/{{ recibo.id }}/exportar" class="btn btn-info btn-sm">Exportar</a>
-                        {% else %}
-                        <button class="btn btn-info btn-sm" disabled>Exportar</button>
-                        {% endif %}
-                        <a href="/recibo/{{ recibo.id }}/editar" class="btn btn-warning btn-sm">Editar</a>
-                        <form action="/recibo/{{ recibo.id }}/deletar" method="POST" style="display:inline;">
-                            <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
+                        <a href="{{ url_for('editar_recibo', id=recibo.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                        <form method="POST" action="{{ url_for('deletar_recibo', id=recibo.id) }}" style="display:inline-block;">
+                            <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
                         </form>
+                        {% if recibo.pago %}
+                        <a href="{{ url_for('exportar_recibo', id=recibo.id) }}" class="btn btn-success btn-sm">Exportar</a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
