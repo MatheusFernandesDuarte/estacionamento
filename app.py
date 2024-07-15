@@ -443,6 +443,9 @@ def exportar_recibo(id):
     else:
         file_name = f"recibo_{recibo.id}.pdf"
 
+    if not recibo.data_saida:
+        recibo.data_saida = recibo.data_entrada
+
     file_path = os.path.join(base_path, file_name)
 
     criar_recibo(
