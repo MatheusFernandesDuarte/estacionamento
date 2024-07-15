@@ -158,12 +158,13 @@ def editar_cliente(id):
 
         try:
             if (era_mensalista != cliente.mensalista or era_vinte_quatro_horas != cliente.vinte_quatro_horas or tipo_veiculo_anterior != cliente.tipo_veiculo):
-                # Atualizar recibos futuros não pagos se o plano mudou
-                if cliente.mensalista or cliente.vinte_quatro_horas:
-                    atualizar_recibos_futuros(cliente)
-                else:
-                    apagar_recibos_futuros(cliente)
-                calcular_pagamentos_pendentes(cliente)
+                if era_mensalista or era_vinte_quatro_horas or cliente.mensalista or cliente.vinte_quatro_horas:
+                    # Atualizar recibos futuros não pagos se o plano mudou
+                    if cliente.mensalista or cliente.vinte_quatro_horas:
+                        atualizar_recibos_futuros(cliente)
+                    else:
+                        apagar_recibos_futuros(cliente)
+                    calcular_pagamentos_pendentes(cliente)
 
             db.session.commit()
             flash('Cliente atualizado com sucesso!', 'success')
