@@ -11,6 +11,13 @@
         <h1 class="mt-5">Recibos</h1>
         <a href="/" class="btn btn-secondary mt-3 mb-3">Voltar</a>
         <a href="/recibo/novo" class="btn btn-primary mt-3 mb-3">Novo Recibo</a>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
         <form method="POST" class="mb-3">
             <div class="form-row">
                 <div class="form-group col-md-3">
