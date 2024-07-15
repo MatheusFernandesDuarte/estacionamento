@@ -465,7 +465,7 @@ def criar_recibo(valor: float, cliente: str, data_de_entrada: str, data_de_saida
     locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
     # Formatting the currency value
-    valor_formatado = locale.currency(valor, grouping=True).replace(" ", "", 1)
+    valor_formatado = f"R${locale.currency(valor, grouping=True).replace('R$','')}"
 
     # Creating the canvas
     cnv = canvas.Canvas(filename=output_path, pagesize=(945, 591))
