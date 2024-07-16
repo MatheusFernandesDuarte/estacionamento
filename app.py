@@ -259,9 +259,10 @@ def novo_recibo():
                     flash('Data é necessária para recibo de diária.', 'danger')
                     return redirect(url_for('novo_recibo'))
                 data_entrada = datetime.strptime(data_diaria, '%Y-%m-%d')
+                data_saida = data_entrada + timedelta(hours=23, minutes=59)
                 configuracao = Configuracao.query.first()
                 valor = configuracao.valor_diaria if configuracao else 50.0
-                novo_recibo = Recibo(cliente_id=cliente_id, data_entrada=data_entrada, valor=valor)
+                novo_recibo = Recibo(cliente_id=cliente_id, data_entrada=data_entrada, data_saida=data_saida, valor=valor)
             else:
                 data_entrada = request.form.get('data_entrada')
                 data_saida = request.form.get('data_saida')
