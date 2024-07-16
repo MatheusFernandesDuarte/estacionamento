@@ -69,7 +69,7 @@ def clientes():
     return render_template('clientes.html', clientes=clientes)
 
 def inicializar_planos():
-    tipos_veiculos = ['carro pequeno', 'SUV', 'moto', 'vinte_quatro_horas']
+    tipos_veiculos = ['Carro Pequeno', 'SUV', 'Moto', 'vinte_quatro_horas']
     valores_iniciais = [320.0, 350.0, 150.0, 400.0]
 
     for tipo, valor in zip(tipos_veiculos, valores_iniciais):
@@ -238,15 +238,12 @@ def novo_recibo():
                 flash('Mês de referência é necessário para mensalistas e clientes 24h.', 'danger')
                 return redirect(url_for('novo_recibo'))
 
-            # Verificar se é o primeiro mês do cliente
             recibo_existente = Recibo.query.filter_by(cliente_id=cliente_id).first()
             if recibo_existente:
-                # Não é o primeiro mês, definir data_entrada e data_saida como dia 5 do mês de referência e do próximo mês
                 mes_referencia_date = datetime.strptime(mes_referencia, '%Y-%m')
                 data_entrada = mes_referencia_date.replace(day=5)
                 data_saida = (mes_referencia_date + timedelta(days=32)).replace(day=5)
             else:
-                # É o primeiro mês, definir data_entrada como a data atual e data_saida como dia 5 do próximo mês
                 data_entrada = datetime.now()
                 mes_referencia_date = datetime.strptime(mes_referencia, '%Y-%m')
                 data_saida = (mes_referencia_date + timedelta(days=32)).replace(day=5)
@@ -556,20 +553,20 @@ def calcular_valor_por_horas(horas):
     configuracao = Configuracao.query.first()
     valor_hora = configuracao.valor_hora if configuracao else 10.0
     valor_diaria = configuracao.valor_diaria if configuracao else 50.0
-    valor_inicial = 12.0  # Valor inicial fixo para começar
 
-    if horas > 5:
+    if valor_hora + (int(horas) * valor_hora) > valor_diaria:
         return valor_diaria
-    return valor_inicial + (int(horas) * valor_hora)
+    
+    return valor_hora + (int(horas) * valor_hora)
 
 def verificar_renovar_recibos(cliente):
     if not cliente.mensalista and not cliente.vinte_quatro_horas:
         return
 
     tipo_veiculo_valores = {
-        'carro pequeno': 320.0,
+        'Carro Pequeno': 320.0,
         'SUV': 350.0,
-        'moto': 150.0,
+        'Moto': 150.0,
     }
 
     ultimo_recibo = Recibo.query.filter_by(cliente_id=cliente.id).order_by(Recibo.mes_referencia.desc()).first()
@@ -591,9 +588,9 @@ def verificar_renovar_recibos(cliente):
 def configurar_planos():
     if request.method == 'POST':
         valores = {
-            'carro pequeno': request.form['carro_pequeno'],
+            'Carro Pequeno': request.form['carro_pequeno'],
             'SUV': request.form['suv'],
-            'moto': request.form['moto'],
+            'Moto': request.form['moto'],
             'vinte_quatro_horas': request.form['vinte_quatro_horas'],
             'valor_hora': request.form['valor_hora'],
             'valor_diaria': request.form['valor_diaria']
@@ -611,7 +608,6 @@ def configurar_planos():
                 plano = Plano.query.filter_by(tipo_veiculo=tipo).first()
                 if plano:
                     plano.valor = float(valor)
-                    atualizar_recibos_nao_pagos(plano.id, plano.valor)
                 else:
                     novo_plano = Plano(tipo_veiculo=tipo, valor=float(valor))
                     db.session.add(novo_plano)
