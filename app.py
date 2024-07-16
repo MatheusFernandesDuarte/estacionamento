@@ -383,8 +383,8 @@ def exportar_recibo(id):
     criar_recibo(
         valor=recibo.valor,
         cliente=cliente.nome,
-        data_de_entrada=recibo.data_entrada.strftime('%d/%m/%Y'),
-        data_de_saida=recibo.data_saida.strftime('%d/%m/%Y'),
+        data_de_entrada=recibo.data_entrada.strftime('%d/%m/%Y %H:%M:%S'),
+        data_de_saida=recibo.data_saida.strftime('%d/%m/%Y %H:%M:%S'),
         veiculo=cliente.modelo,
         placa=cliente.placa,
         output_path=file_path
