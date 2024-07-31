@@ -330,6 +330,8 @@ def recibos():
                 recibo.data_entrada = mes_referencia.replace(day=5)
             if not recibo.data_saida or recibo.data_saida.month != (mes_referencia + timedelta(days=32)).month:
                 recibo.data_saida = (mes_referencia + timedelta(days=32)).replace(day=5)
+    
+    db.session.commit()
 
     return render_template('recibos.html', recibos=recibos, clientes=clientes)
 
