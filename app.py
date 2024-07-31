@@ -184,7 +184,6 @@ def atualizar_recibos_futuros(cliente):
     if cliente.vinte_quatro_horas:
         plano_24h = Plano.query.filter_by(tipo_veiculo='vinte_quatro_horas').first()
         valor_mensal = plano_24h.valor if plano_24h else 0
-
     for recibo in recibos_futuros:
         recibo.valor = valor_mensal
     db.session.commit()
@@ -329,9 +328,8 @@ def recibos():
             if not recibo.data_entrada or recibo.data_entrada.month != mes_referencia.month:
                 recibo.data_entrada = mes_referencia.replace(day=5)
             if not recibo.data_saida or recibo.data_saida.month != (mes_referencia + timedelta(days=32)).month:
-                recibo.data_saida = (mes_referencia + timedelta(days=32)).replace(day=5)
-    
-    db.session.commit()
+                recibo.data_saida = (mes_referencia + timedelta(days=32)).replace(day=5)  
+        db.session.commit()
 
     return render_template('recibos.html', recibos=recibos, clientes=clientes)
 
@@ -460,7 +458,7 @@ def editar_recibo(id):
             recibo.mes_referencia = request.form['mes_referencia']
             recibo.valor = float(request.form['valor'])
             
-            # Atualizar as datas de entrada e saída
+            '''# Atualizar as datas de entrada e saída
             if recibo.cliente.mensalista and recibo.mes_referencia:
                 mes_referencia_date = datetime.strptime(recibo.mes_referencia, '%Y-%m')
                 if not recibo.data_entrada:
@@ -485,7 +483,7 @@ def editar_recibo(id):
                 if data_diaria:
                     recibo.data_entrada = datetime.strptime(data_diaria, '%Y-%m-%d')
                     recibo.data_saida = None
-                    recibo.mes_referencia = None
+                    recibo.mes_referencia = None'''
 
             db.session.commit()
             flash('Recibo atualizado com sucesso!', 'success')
@@ -519,9 +517,17 @@ def calcular_pagamentos_pendentes(cliente):
 
     plano = Plano.query.filter_by(tipo_veiculo=cliente.tipo_veiculo).first()
     valor_mensal = plano.valor if plano else 0
+    
     if cliente.vinte_quatro_horas:
         plano_24h = Plano.query.filter_by(tipo_veiculo='vinte_quatro_horas').first()
         valor_mensal = plano_24h.valor if plano_24h else 0
+    else:
+        if cliente.tipo_veiculo == "SUV":
+            tipo_veiculo = cliente.tipo_veiculo
+        else:
+            tipo_veiculo = cliente.tipo_veiculo.title()
+        plano = Plano.query.filter_by(tipo_veiculo=tipo_veiculo).first()
+        valor_mensal = plano.valor if plano else 0
 
     numero_dias_mes_atual = (proximo_mes - primeiro_dia_mes_atual).days
     valor_pro_rata = round(((valor_mensal / numero_dias_mes_atual) * diferenca_dias), 2)
@@ -662,8 +668,8 @@ def corrigir_datas_recibos():
             if not recibo.data_entrada:
                 recibo.data_entrada = datetime.now()
             if not recibo.data_saida:
-                mes_referencia_date = datetime.strptime(recibo.mes_referencia, '%Y-%m')
-                recibo.data_saida = (mes_referencia_date + timedelta(days=32)).replace(day=5)
+                #mes_referencia_date = datetime.strptime(recibo.mes_referencia, '%Y-%m')
+                recibo.data_saida = (recibo.data_entrada + timedelta(days=32)).replace(day=5)
 
     db.session.commit()
 
