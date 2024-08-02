@@ -1,10 +1,13 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify
+import locale
+import shutil
+import time
+import logging
+import os
+import builtins
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
-import logging
 from werkzeug.utils import secure_filename
-import builtins
-import os
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
@@ -12,9 +15,12 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import Paragraph, Frame
-import locale
+from sqlalchemy.event import listens_for
 
 app = Flask(__name__)
+
+app.template_folder = os.path.join(os.path.abspath(''), 'templates')
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///clientes.db'
 app.config['SECRET_KEY'] = 'mysecret'
 db = SQLAlchemy(app)
@@ -22,7 +28,6 @@ db = SQLAlchemy(app)
 # Configuração do logger
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
 class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
@@ -54,6 +59,29 @@ class Configuracao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     valor_hora = db.Column(db.Float, nullable=False, default=10.0)
     valor_diaria = db.Column(db.Float, nullable=False, default=50.0)
+
+def backup_database():
+    db_path = os.path.join(os.path.abspath(''), 'instance', 'clientes.db')
+    if os.path.exists(db_path):
+        now = datetime.now()
+        backup_dir = f"backups/{now.strftime('%m-%Y')}"
+        if not os.path.exists(backup_dir):
+            os.makedirs(backup_dir)
+        backup_path = os.path.join(backup_dir, f"backup_{now.strftime('%d_%H-%M-%S')}.db")
+        shutil.copy2(db_path, backup_path)
+        print(f"Backup criado: {backup_path}")
+    else:
+        print(f"Erro: {db_path} não encontrado. Backup não realizado.")
+
+@listens_for(Cliente, 'after_insert')
+@listens_for(Cliente, 'after_update')
+@listens_for(Cliente, 'after_delete')
+@listens_for(Recibo, 'after_insert')
+@listens_for(Recibo, 'after_update')
+@listens_for(Recibo, 'after_delete')
+def receive_after_change(mapper, connection, target):
+    print(1)
+    backup_database()
 
 @app.template_global()
 def str(value):
@@ -352,7 +380,7 @@ def exportar_recibo(id):
     
     # Nome da pasta inclui o nome do cliente, ID e modelo do carro
     client_folder = secure_filename(f"{cliente.nome}_{cliente.id}_{cliente.modelo}")
-    base_path = os.path.join('files', client_folder)
+    base_path = os.path.join(os.path.abspath(''), 'files', client_folder)
     if not os.path.exists(base_path):
         os.makedirs(base_path)
     
@@ -390,7 +418,7 @@ def exportar_recibo(id):
         output_path=file_path
     )
 
-    return send_file(file_path, as_attachment=True)
+    return send_from_directory(base_path, file_name, as_attachment=True)
 
 def criar_recibo(valor: float, cliente: str, data_de_entrada: str, data_de_saida: str, veiculo: str, placa: str, output_path: str) -> None:
     # Setting locale for currency formatting
@@ -511,13 +539,14 @@ def deletar_recibo(id):
 def calcular_pagamentos_pendentes(cliente):
     hoje = datetime.now()
     primeiro_dia_mes_atual = hoje.replace(day=1)
+    
     proximo_mes = (primeiro_dia_mes_atual + timedelta(days=32)).replace(day=1)
     dia_5_proximo_mes = proximo_mes.replace(day=5)
     diferenca_dias = (dia_5_proximo_mes - hoje).days
 
     plano = Plano.query.filter_by(tipo_veiculo=cliente.tipo_veiculo).first()
     valor_mensal = plano.valor if plano else 0
-    
+
     if cliente.vinte_quatro_horas:
         plano_24h = Plano.query.filter_by(tipo_veiculo='vinte_quatro_horas').first()
         valor_mensal = plano_24h.valor if plano_24h else 0
@@ -531,6 +560,11 @@ def calcular_pagamentos_pendentes(cliente):
 
     numero_dias_mes_atual = (proximo_mes - primeiro_dia_mes_atual).days
     valor_pro_rata = round(((valor_mensal / numero_dias_mes_atual) * diferenca_dias), 2)
+    
+    if hoje.day < 5:
+       valor_pro_rata = round((valor_pro_rata - valor_mensal), 2)
+    if hoje.day == 5:
+        valor_pro_rata = 0
 
     recibos_existentes = Recibo.query.filter(Recibo.cliente_id == cliente.id, Recibo.mes_referencia >= hoje.strftime('%Y-%m'), Recibo.pago == False).all()
 
@@ -548,14 +582,22 @@ def calcular_pagamentos_pendentes(cliente):
             recibo_existente.valor = valor_mensal
         else:
             novo_recibo = Recibo(cliente_id=cliente.id, mes_referencia=mes_referencia, valor=valor_mensal)
-            db.session.add(novo_recibo)
+            db.session.add(novo_recibo) 
 
     db.session.commit()
 
 def calcular_valor(cliente, mes_referencia):
     plano = Plano.query.filter_by(tipo_veiculo=cliente.tipo_veiculo).first()
     if cliente.vinte_quatro_horas:
-        plano = Plano.query.filter_by(tipo_veiculo='vinte_quatro_horas').first()
+        plano_24h = Plano.query.filter_by(tipo_veiculo='vinte_quatro_horas').first()
+        valor = plano_24h.valor if plano_24h else 0
+    else:
+        if cliente.tipo_veiculo == "SUV":
+            tipo_veiculo = cliente.tipo_veiculo
+        else:
+            tipo_veiculo = cliente.tipo_veiculo.title()
+        plano = Plano.query.filter_by(tipo_veiculo=tipo_veiculo).first()
+        valor = plano.valor if plano else 0
     return plano.valor if plano else 0
 
 def calcular_valor_por_horas(horas):
@@ -678,4 +720,11 @@ if __name__ == '__main__':
         db.create_all()
         inicializar_planos()
         corrigir_datas_recibos()
-    app.run(debug=True)
+
+    app.run(
+        host='0.0.0.0',
+        port=5000,
+        debug=True
+        )
+    
+    
