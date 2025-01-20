@@ -119,7 +119,9 @@ python src/app.py
 
 ## 📬 Contato
 Desenvolvido por **Matheus Fernandes**
+
 📧 E-mail: matthfeeer@gmail.com
+
 🔗 [LinkedIn](https://linkedin.com/in/matheus-fernandes-duarte-a8a74724a/) | [GitHub](https://github.com/MatheusFernandesDuarte)
 
 ## 📝 Licença
