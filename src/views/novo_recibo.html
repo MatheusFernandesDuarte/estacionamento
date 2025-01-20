@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novo Recibo</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script>
+        function toggleFields() {
+            const clienteSelect = document.getElementById('cliente_id');
+            const selectedCliente = clienteSelect.options[clienteSelect.selectedIndex];
+            const mensalista = selectedCliente.dataset.mensalista === 'True';
+            const vinteQuatroHoras = selectedCliente.dataset.vinteQuatroHoras === 'True';
+            const fieldsMensalista = document.getElementById('fields-mensalista');
+            const fieldsNaoMensalista = document.getElementById('fields-nao-mensalista');
+            const fieldsDiaria = document.getElementById('fields-diaria');
+            const diariaCheckbox = document.getElementById('diaria');
+            const diariaDiv = document.getElementById('diariaDiv');
+            
+            if (mensalista || vinteQuatroHoras) {
+                fieldsMensalista.style.display = 'block';
+                fieldsNaoMensalista.style.display = 'none';
+                fieldsDiaria.style.display = 'none';
+                diariaDiv.style.display = 'none';
+                diariaCheckbox.checked = false;
+            } else if (diariaCheckbox.checked) {
+                fieldsMensalista.style.display = 'none';
+                fieldsNaoMensalista.style.display = 'none';
+                fieldsDiaria.style.display = 'block';
+                diariaDiv.style.display = 'block';
+            } else {
+                fieldsMensalista.style.display = 'none';
+                fieldsNaoMensalista.style.display = 'block';
+                fieldsDiaria.style.display = 'none';
+                diariaDiv.style.display = 'block';
+            }
+        }
+
+        function toggleDiaria() {
+            const diariaCheckbox = document.getElementById('diaria');
+            const fieldsDiaria = document.getElementById('fields-diaria');
+            const fieldsNaoMensalista = document.getElementById('fields-nao-mensalista');
+            
+            if (diariaCheckbox.checked) {
+                fieldsDiaria.style.display = 'block';
+                fieldsNaoMensalista.style.display = 'none';
+            } else {
+                fieldsDiaria.style.display = 'none';
+                fieldsNaoMensalista.style.display = 'block';
+            }
+        }
+
+        function validateForm() {
+            const dataEntrada = document.getElementById('data_entrada').value;
+            const dataSaida = document.getElementById('data_saida').value;
+            const diariaCheckbox = document.getElementById('diaria').checked;
+            const dataDiaria = document.getElementById('data_diaria').value;
+            const clienteSelect = document.getElementById('cliente_id');
+            const selectedCliente = clienteSelect.options[clienteSelect.selectedIndex];
+            const mensalista = selectedCliente.dataset.mensalista === 'True';
+            const vinteQuatroHoras = selectedCliente.dataset.vinteQuatroHoras === 'True';
+            
+            if (diariaCheckbox && !dataDiaria) {
+                alert('Data é necessária para recibo de diária.');
+                return false;
+            }
+            if (!diariaCheckbox && !mensalista && !vinteQuatroHoras && (!dataEntrada || !dataSaida)) {
+                alert('Datas de entrada e saída são necessárias.');
+                return false;
+            }
+            if (dataEntrada && dataSaida && dataEntrada > dataSaida) {
+                alert('A data de entrada não pode ser posterior à data de saída.');
+                return false;
+            }
+            return true;
+        }
+
+        function formatDateTimeInput(inputId) {
+            const input = document.getElementById(inputId);
+            input.addEventListener('input', function(e) {
+                const value = e.target.value;
+                if (value.length === 4) {
+                    e.target.value = value + '-';
+                }
+            });
+            input.addEventListener('keydown', function(e) {
+                const value = e.target.value;
+                if (e.key === 'Tab' && value.length === 4) {
+                    e.preventDefault();
+                    e.target.value = value + '-';
+                    e.target.setSelectionRange(5, 5);
+                }
+            });
+        }
+
+        window.onload = function() {
+            toggleFields();
+            formatDateTimeInput('data_entrada');
+            formatDateTimeInput('data_saida');
+        };
+
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Gerar Recibo</h1>
+        <a href="/recibos" class="btn btn-secondary mt-3 mb-3">Voltar</a>
+        <form method="POST" onsubmit="return validateForm()">
+            <div class="form-group">
+                <label for="cliente_id">Cliente</label>
+                <select class="form-control" id="cliente_id" name="cliente_id" required onchange="toggleFields()">
+                    <option value="" disabled selected>Selecione um cliente</option>
+                    {% for cliente in clientes %}
+                    <option value="{{ cliente.id }}" data-mensalista="{{ cliente.mensalista }}" data-vinte-quatro-horas="{{ cliente.vinte_quatro_horas }}">{{ cliente.nome }} - {{ cliente.modelo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group mt-3">
+                <label for="valor">Valor a Cobrar</label>
+                <input type="number" class="form-control" id="valor" name="valor" step="0.01" required>  
+            </div>
+            <div class="form-check mb-3" id="diariaDiv">
+                <input type="checkbox" class="form-check-input" id="diaria" name="diaria" onclick="toggleDiaria()">
+                <label class="form-check-label" for="diaria">Diária</label>
+            </div>
+            <div id="fields-mensalista" style="display:none;">
+                <div class="form-group">
+                    <label for="mes_referencia">Mês de Referência</label>
+                    <input type="month" class="form-control" id="mes_referencia" name="mes_referencia">
+                </div>
+            </div>
+            <div id="fields-diaria" style="display:none;">
+                <div class="form-group">
+                    <label for="data_diaria">Data</label>
+                    <input type="date" class="form-control" id="data_diaria" name="data_diaria">
+                </div>
+            </div>
+            <div id="fields-nao-mensalista">
+                <div class="form-group">
+                    <label for="data_entrada">Data de Entrada</label>
+                    <input type="datetime-local" class="form-control" id="data_entrada" name="data_entrada">
+                </div>
+                <div class="form-group">
+                    <label for="data_saida">Data de Saída</label>
+                    <input type="datetime-local" class="form-control" id="data_saida" name="data_saida">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">Gerar Recibo</button>
+        </form>
+    </div>
+</body>
+</html>

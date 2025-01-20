@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recibos</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Recibos</h1>
+        <a href="/" class="btn btn-secondary mt-3 mb-3">Voltar</a>
+        <a href="/recibos/novo" class="btn btn-primary mt-3 mb-3">Novo Recibo</a>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form method="POST" class="mb-3">
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label for="cliente_id">Cliente</label>
+                    <select class="form-control" id="cliente_id" name="cliente_id">
+                        <option value="">Todos os clientes</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id }}">{{ cliente.nome }} - {{ cliente.modelo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="data_entrada_inicio">Data de Entrada Início</label>
+                    <input type="date" class="form-control" id="data_entrada_inicio" name="data_entrada_inicio" value="{{ request.form.get('data_entrada_inicio') }}">
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="data_entrada_fim">Data de Entrada Fim</label>
+                    <input type="date" class="form-control" id="data_entrada_fim" name="data_entrada_fim" value="{{ request.form.get('data_entrada_fim') }}">
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="pago">Pago</label>
+                    <select class="form-control" id="pago" name="pago">
+                        <option value="">Todos</option>
+                        <option value="true" {% if request.form.get('pago') == 'true' %}selected{% endif %}>Pago</option>
+                        <option value="false" {% if request.form.get('pago') == 'false' %}selected{% endif %}>Não Pago</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+        </form>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Cliente</th>
+                    <th>Data de Entrada</th>
+                    <th>Data de Saída</th>
+                    <th>Valor</th>
+                    <th>Pago</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for recibo in recibos %}
+                <tr {% if recibo.pago %}style="font-weight: bold;"{% endif %}>
+                    <td>{{ recibo.id }}</td>
+                    <td>{{ recibo.cliente.nome }}</td>
+                    <td>{{ recibo.data_entrada.strftime('%d/%m/%Y %H:%M') if recibo.data_entrada else '' }}</td>
+                    <td>{{ recibo.data_saida.strftime('%d/%m/%Y %H:%M') if recibo.data_saida else '' }}</td>
+                    <td>{{ recibo.valor }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('recibo.marcar_pago', id=recibo.id) }}" style="display:inline-block;">
+                            <input type="checkbox" name="pago" {% if recibo.pago %}checked{% endif %} onclick="this.form.submit()">
+                        </form>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('recibo.editar_recibo', id=recibo.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                        <form method="POST" action="{{ url_for('recibo.deletar_recibo', id=recibo.id) }}" style="display:inline-block;">
+                            <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+                        </form>
+                        {% if recibo.pago %}
+                        <a href="{{ url_for('recibo.exportar_recibo', id=recibo.id) }}" class="btn btn-success btn-sm">Exportar</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

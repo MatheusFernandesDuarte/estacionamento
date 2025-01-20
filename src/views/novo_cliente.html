@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novo Cliente</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script>
+        function toggleCheckbox(checkbox) {
+            const mensalistaCheckbox = document.getElementById('mensalista');
+            const vinteQuatroHorasCheckbox = document.getElementById('vinte_quatro_horas');
+            const valorField = document.getElementById('valor-a-cobrar');
+            const valorInput = document.getElementById('valor');
+
+            // Verificar o estado das checkboxes
+            if (mensalistaCheckbox.checked || vinteQuatroHorasCheckbox.checked) {
+                valorField.style.display = 'block'; // Exibe o campo Valor a Cobrar
+                valorInput.setAttribute('required', 'required');
+            } else {
+                valorField.style.display = 'none'; // Esconde o campo Valor a Cobrar
+                valorInput.removeAttribute('required', 'required');
+            }
+
+            // Lógica para alternar entre as checkboxes
+            if (checkbox.id === 'mensalista' && checkbox.checked) {
+                vinteQuatroHorasCheckbox.checked = false;
+            } else if (checkbox.id === 'vinte_quatro_horas' && checkbox.checked) {
+                mensalistaCheckbox.checked = false;
+            }
+        }
+
+        // Verificar o estado inicial das checkboxes ao carregar a página
+        window.onload = function() {
+            const mensalistaCheckbox = document.getElementById('mensalista');
+            const vinteQuatroHorasCheckbox = document.getElementById('vinte_quatro_horas');
+            const valorField = document.getElementById('valor-a-cobrar');
+            const valorInput = document.getElementById('valor');
+            if (mensalistaCheckbox.checked || vinteQuatroHorasCheckbox.checked) {
+                valorField.style.display = 'block'; // Exibe o campo Valor a Cobrar
+                valorInput.setAttribute('required', 'required'); // Adiciona o atributo required
+            } else {
+                valorField.style.display = 'none'; // Esconde o campo Valor a Cobrar
+                valorInput.removeAttribute('required'); // Remove o atributo required
+            }
+        };
+        
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Adicionar Novo Cliente</h1>
+        <a href="/clientes" class="btn btn-secondary mt-3 mb-3">Voltar</a>
+        <form method="POST">
+            <div class="form-group">
+                <label for="nome">Nome</label>
+                <input type="text" class="form-control" id="nome" name="nome" required>
+            </div>
+            <div class="form-group">
+                <label for="telefone">Telefone</label>
+                <input type="text" class="form-control" id="telefone" name="telefone" required>
+            </div>
+            <div class="form-group">
+                <label for="tipo_veiculo">Tipo de Veículo</label>
+                <select class="form-control" id="tipo_veiculo" name="tipo_veiculo" required>
+                    <option value="" disabled selected>Selecione um tipo de veículo</option>
+                    <option value="Carro Pequeno">Carro Pequeno</option>
+                    <option value="SUV">SUV</option>
+                    <option value="Moto">Moto</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="modelo">Modelo</label>
+                <input type="text" class="form-control" id="modelo" name="modelo" required>
+            </div>
+            <div class="form-group">
+                <label for="data_vencimento">Data de Vencimento</label>
+                <input type="text" class="form-control" id="data_vencimento" name="data_vencimento">
+            </div>
+            <div class="form-group">
+                <label for="cpf_cnpj">CPF/CNPJ</label>
+                <input type="text" class="form-control" id="cpf_cnpj" name="cpf_cnpj">
+            </div>
+            <div class="form-group">
+                <label for="email">E-mail</label>
+                <input type="text" class="form-control" id="email" name="email">
+            </div>
+            <div class="form-group">
+                <label for="endereco">Endereço</label>
+                <input type="text" class="form-control" id="endereco" name="endereco">
+            </div>
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="mensalista" name="mensalista" onclick="toggleCheckbox(this)">
+                <label class="form-check-label" for="mensalista">Mensalista</label>
+            </div>
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="vinte_quatro_horas" name="vinte_quatro_horas" onclick="toggleCheckbox(this)">
+                <label class="form-check-label" for="vinte_quatro_horas">24h</label>
+            </div>
+            <div class="form-group mt-3">
+                <div id="valor-a-cobrar">
+                    <label for="valor">Valor a Cobrar</label>
+                    <input type="number" class="form-control" id="valor" name="valor" step="0.01" required>        
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">Salvar</button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,5 @@
+Flask==2.3.0
+Flask-SQLAlchemy==3.1.1
+Werkzeug==2.3.0
+reportlab
+flask_migrate

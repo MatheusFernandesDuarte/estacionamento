@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clientes</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Clientes - Total: {{ total_clientes }}</h1>
+        <a href="/" class="btn btn-secondary mt-3 mb-3">Voltar</a>
+        <a href="/clientes/novo" class="btn btn-primary mt-3 mb-3">Novo Cliente</a>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        
+    <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Telefone</th>
+                    <th>Tipo de Veículo</th>
+                    <th>Modelo</th>
+                    <th style="cursor:pointer;" onclick="sortTableByDate(4)" id="header-vencimento"
+                        >Data de Vencimento <span id="sort-icon"></span>
+                    </th>
+                    <th>CPF/CNPJ</th>
+                    <th>E-mail</th>
+                    <th>Endereço</th>
+                    <th>Valor Cobrado</th>
+                    <th>Categoria</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="clientesTableBody">
+                {% for cliente in clientes %}
+                <tr>
+                    <td>{{ cliente.nome }}</td>
+                    <td>{{ cliente.telefone }}</td>
+                    <td>{{ cliente.tipo_veiculo }}</td>
+                    <td>{{ cliente.modelo }}</td>
+                    <td class="data-vencimento">{{ cliente.data_vencimento or ''}}</td>
+                    <td>{{ cliente.cpf_cnpj }}</td>
+                    <td>{{ cliente.email }}</td>
+                    <td>{{ cliente.endereco }}</td>
+                    <td>{{ cliente.valor }}</td>
+                    <td>
+                        {% if cliente.mensalista %}
+                            Mensalista
+                        {% elif cliente.vinte_quatro_horas %}
+                            24 Horas
+                        {% else %}
+                            Avulso
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/clientes/{{ cliente.id }}/editar" class="btn btn-warning btn-sm">Editar</a>
+                        <form action="/clientes/{{ cliente.id }}/deletar" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
+<script>
+    let currentDirection = ''; // Mantém o estado da ordenação (ascendente, descendente ou neutro)
+    const originalRows = Array.from(document.querySelectorAll("#clientesTableBody tr")); // Armazena a ordem original das linhas
+
+    // Função para verificar se uma string contém apenas números
+    function sortTableByDate(n) {
+        const tableBody = document.querySelector("#clientesTableBody");
+        const rows = Array.from(tableBody.rows);
+        const sortIcon = document.getElementById('sort-icon');
+
+        // Reset para ordem original no terceiro clique
+        if (currentDirection === 'desc') {
+            originalRows.forEach(row => tableBody.appendChild(row));
+            currentDirection = '';
+            sortIcon.innerHTML = ''; // Remover o ícone de ordenação
+            return;
+        }
+
+        // Função de comparação para ordenar os dias do mês
+        function compareRowsAsc(rowA, rowB) {
+            const cellA = rowA.getElementsByTagName("TD")[n].innerHTML.trim();
+            const cellB = rowB.getElementsByTagName("TD")[n].innerHTML.trim();
+
+            const dayA = cellA === '' ? 0 : parseInt(cellA, 10); // Tratar células vazias
+            const dayB = cellB === '' ? 0 : parseInt(cellB, 10);
+
+            return dayA - dayB; // Ordena em ordem crescente
+        }
+
+        function compareRowsDesc(rowA, rowB) {
+            const cellA = rowA.getElementsByTagName("TD")[n].innerHTML.trim();
+            const cellB = rowB.getElementsByTagName("TD")[n].innerHTML.trim();
+
+            const dayA = cellA === '' ? 0 : parseInt(cellA, 10); // Tratar células vazias
+            const dayB = cellB === '' ? 0 : parseInt(cellB, 10);
+
+            return dayB - dayA; // Ordena em ordem decrescente
+        }
+
+        // Ordena conforme a direção atual
+        if (currentDirection === '' || currentDirection === 'desc') {
+            rows.sort(compareRowsAsc);
+            currentDirection = 'asc';
+            sortIcon.innerHTML = '▲'; // Ícone de ordenação ascendente
+        } else if (currentDirection === 'asc') {
+            rows.sort(compareRowsDesc);
+            currentDirection = 'desc';
+            sortIcon.innerHTML = '▼'; // Ícone de ordenação descendente
+        }
+
+        // Remover todas as linhas da tabela e reinseri-las na nova ordem
+        rows.forEach(row => tableBody.appendChild(row));
+    }
+</script>
+</body>
+</html>
