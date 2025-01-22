@@ -85,6 +85,7 @@ README.md
 - pip instalado
 
 ### 🏗️ Configuração do Ambiente:
+🚀 Opção 1: Rodando Sem Docker
 ```bash
 # Clone o repositório
 git clone https://github.com/seuusuario/estacionamento2.git
@@ -103,6 +104,17 @@ pip install -r requirements.txt
 # Execute o servidor
 python src/app.py
 ```
+🐳 Opção 2: Rodando Com Docker
+1️⃣ Construindo a imagem Docker
+```bash
+docker build -t estacionamento:v1 .
+```
+
+2️⃣ Rodando o container
+```bash
+docker run -p 5000:5000 estacionamento:v1
+```
+Agora a aplicação estará disponível em http://localhost:5000/.
 
 ## Como Usar
 
