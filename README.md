@@ -16,7 +16,7 @@ Este projeto foi desenvolvido para facilitar o **controle de mensalistas** no **
 
 ## Estrutura do Projeto
 ```plaintext
-/estacionamento2
+/estacionamento
     ├── /.vscode
     │   └── settings.json
     ├── /backups
@@ -59,12 +59,17 @@ Este projeto foi desenvolvido para facilitar o **controle de mensalistas** no **
     │       └── novo_cliente.html
     │       └── novo_recibo.html
     │       └── recibos.html
-    │   └── __init__.py
-    │   └── .gitignore
     │   └── app.py
-    │   └── README.md
-    │   └── requirements.txt
+    │   └── __init__.py
+    ├── .dockerignore
+    ├── .gitignore
+    ├── CONTRIBUTING.md
+    ├── Dockerfile
+    ├── LICENSE
+    ├── requirements.txt
+    ├── ROADMAP.md
     └──
+README.md
 ```
 
 ## Tecnologias Utilizadas
