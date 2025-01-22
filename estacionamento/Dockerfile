@@ -1,14 +1,12 @@
-FROM python:3.10-slim
+FROM python:3.10-alpine
 
 WORKDIR /estacionamento
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc libc-dev \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache gcc musl-dev libffi-dev
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
-&& rm -rf ~/.cache/pip
+    && rm -rf /root/.cache/pip
 
 COPY src/ src/
 
