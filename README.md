@@ -85,6 +85,7 @@ README.md
 - pip instalado
 
 ### 🏗️ Configuração do Ambiente:
+
 🚀 Opção 1: Rodando Sem Docker
 ```bash
 # Clone o repositório
