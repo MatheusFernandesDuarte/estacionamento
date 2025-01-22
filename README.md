@@ -106,6 +106,7 @@ pip install -r requirements.txt
 python src/app.py
 ```
 🐳 Opção 2: Rodando Com Docker
+
 1️⃣ Construindo a imagem Docker
 ```bash
 docker build -t estacionamento:v1 .
