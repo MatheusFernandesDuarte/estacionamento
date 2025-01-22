@@ -4,10 +4,10 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 
-from src.repository.database import db
-from src.models.cliente import Cliente
-from src.models.recibo import Recibo
-from src.utils import criar_recibo, get_template_dir, recibo_existente_check
+from repository.database import db
+from models.cliente import Cliente
+from models.recibo import Recibo
+from utils import criar_recibo, get_template_dir, recibo_existente_check
 
 # Criar um Blueprint para o recibo
 recibo_bp = Blueprint('recibo', __name__)

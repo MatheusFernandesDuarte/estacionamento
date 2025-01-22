@@ -5,8 +5,8 @@ from flask import current_app
 from sqlalchemy.event import listens_for
 from datetime import datetime
 
-from src.models.cliente import Cliente
-from src.models.recibo import Recibo
+from models.cliente import Cliente
+from models.recibo import Recibo
 
 def backup_database():
     db_path = os.path.join(current_app.instance_path, 'database.db')
@@ -36,4 +36,4 @@ def receive_after_change(mapper, connection, target):
     backup_database()
 
 if __name__ == '__main__':
-    from app import app  # Importa o app para garantir que o contexto está ativo
+    from estacionamento.src.app import app  # Importa o app para garantir que o contexto está ativo

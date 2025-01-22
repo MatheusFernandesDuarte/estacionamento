@@ -1,4 +1,4 @@
-from src.repository.database import db
+from repository.database import db
 
 class Recibo(db.Model):
     id = db.Column(db.Integer, primary_key=True)

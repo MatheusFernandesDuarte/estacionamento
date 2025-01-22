@@ -1,4 +1,4 @@
-from src.models.recibo import Recibo
+from models.recibo import Recibo
 
 def recibo_existente(cliente_id, data_entrada, data_saida, mes_referencia, valor) -> bool:
     recibo_existente = Recibo.query.filter_by(

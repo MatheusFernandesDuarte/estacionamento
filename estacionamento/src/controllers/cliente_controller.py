@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 
-from src.repository.database import db
-from src.models.cliente import Cliente
-from src.models.recibo import Recibo
-from src.utils import apagar_recibos_futuros, atualizar_recibos_futuros, get_template_dir
+from repository.database import db
+from models.cliente import Cliente
+from models.recibo import Recibo
+from utils import apagar_recibos_futuros, atualizar_recibos_futuros, get_template_dir
 
 # Criar um Blueprint para o cliente
 cliente_bp = Blueprint('cliente', __name__)

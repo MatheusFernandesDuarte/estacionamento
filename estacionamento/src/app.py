@@ -1,13 +1,16 @@
 import logging
 import os
+import sys
 
 from flask import Flask, render_template
 from flask_migrate import Migrate
 
-from src.repository.database import db
-from src.utils.backups import backup_database
-from src.controllers.cliente_controller import cliente_bp
-from src.controllers.recibo_controller import recibo_bp
+from repository.database import db
+from utils.backups import backup_database
+from controllers.cliente_controller import cliente_bp
+from controllers.recibo_controller import recibo_bp
+
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 app = Flask(__name__)
 

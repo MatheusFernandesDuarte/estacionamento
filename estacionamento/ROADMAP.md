@@ -6,7 +6,7 @@
 - [x] Banco de dados SQLite
 
 ### 🚧 Versão 1.1 (Em desenvolvimento)
-- [ ] Dockerização
+- [x] Dockerização
 - [ ] Configuração de Workflow CI/CD no GitHub Actions
 
 ### 🎯 Versão 2.0 (Futuro)

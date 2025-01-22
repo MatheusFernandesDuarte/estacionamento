@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from src.models.recibo import Recibo
-from src.repository.database import db
+from models.recibo import Recibo
+from repository.database import db
 
 def atualizar_recibos_futuros(cliente) -> None:
     hoje = datetime.now().strftime('%Y-%m')
